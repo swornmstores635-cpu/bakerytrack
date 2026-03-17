@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#b91c1c">
+<title>BakeryTrack Nepal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0ece4;color:#1c1917;font-size:14px}
+:root{
+  --red:#b91c1c;--red-d:#991b1b;--red-l:#fef2f2;--red-b:#fca5a5;
+  --grn:#15803d;--grn-l:#f0fdf4;--grn-b:#86efac;
+  --teal:#0f766e;--teal-l:#f0fdfa;--teal-b:#5eead4;
+  --amb:#b45309;--amb-l:#fffbeb;--amb-b:#fcd34d;
+  --pur:#6d28d9;--pur-l:#f5f3ff;
+  --bg:#f0ece4;--sur:#fff;--sur2:#faf7f2;--bd:rgba(0,0,0,.09);--bd2:rgba(0,0,0,.16);
+  --tx:#1c1917;--txs:#57534e;--txt:#a8a29e;
+  --sh:0 1px 3px rgba(0,0,0,.07)
+}
+/* ── LOADING ── */
+#ld{position:fixed;inset:0;background:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:9999;transition:opacity .35s}
+#ld.out{opacity:0;pointer-events:none}
+.ld-ic{font-size:58px;margin-bottom:14px;animation:pp 1.4s ease-in-out infinite}
+.ld-t{font-size:22px;font-weight:800}.ld-s{font-size:12px;opacity:.75;margin-top:3px}
+.ld-sp{width:26px;height:26px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:sp .75s linear infinite;margin-top:22px}
+@keyframes pp{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:var(--red);display:none;align-items:center;justify-content:center;padding:20px;z-index:100;overflow-y:auto}
+.lbox{background:#fff;border-radius:20px;padding:28px 22px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.lb-ic{font-size:50px;text-align:center;display:block}
+.lb-nm{font-size:22px;font-weight:800;color:var(--red);text-align:center;margin-top:6px}
+.lb-tg{font-size:12px;color:var(--txs);text-align:center;margin-top:2px;margin-bottom:22px}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.rc{border:2px solid var(--bd2);border-radius:14px;padding:16px 10px 13px;text-align:center;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s}
+.rc:hover,.rc.sel{border-color:var(--red);background:var(--red-l)}
+.rc-ic{font-size:28px;display:block;margin-bottom:5px}
+.rc-t{font-size:13px;font-weight:700;color:var(--tx);display:block}
+.rc-s{font-size:10px;color:var(--txs);display:block;margin-top:1px}
+.lf{margin-bottom:12px}
+.ll{display:block;font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.li{width:100%;padding:11px 13px;border:1.5px solid var(--bd2);border-radius:12px;font-size:15px;font-family:inherit;outline:none;background:#fff;color:var(--tx);-webkit-appearance:none;transition:border-color .15s}
+.li:focus{border-color:var(--red)}
+.li.pin{letter-spacing:.3em;font-size:22px;text-align:center;font-weight:700}
+select.li{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23a8a29e' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.lbtn{width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
+.lbtn:active{background:var(--red-d)}
+.lhint{font-size:11px;color:var(--txt);text-align:center;margin-top:9px}
+.lerr{font-size:12px;font-weight:600;color:var(--red);text-align:center;min-height:18px;margin-top:7px}
+/* ── APP ── */
+#app{display:none;flex-direction:column;height:100vh;overflow:hidden}
+#app.show{display:flex}
+@media(min-width:900px){
+  body{background:#d0c8bc}
+  #app{flex-direction:row;max-width:1160px;margin:0 auto;box-shadow:0 0 50px rgba(0,0,0,.2);height:100vh}
+  .sidebar{display:flex!important}
+  .bot-nav{display:none!important}
+  .pw{padding-bottom:16px}
+}
+/* ── SIDEBAR ── */
+.sidebar{display:none;flex-direction:column;width:224px;min-width:224px;background:var(--sur);border-right:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
+.sb-top{padding:17px 15px 13px;border-bottom:1px solid var(--bd)}
+.sb-ic{font-size:24px}.sb-nm{font-size:15px;font-weight:800;margin-top:4px}.sb-sub{font-size:11px;color:var(--txs);margin-top:1px}
+.sb-pill{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-top:5px}
+.spo{background:var(--teal-l);color:var(--teal)}.sps{background:var(--red-l);color:var(--red)}
+.sb-sec{padding:9px 7px 2px}
+.sb-lbl{font-size:10px;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.07em;padding:0 8px;margin-bottom:2px}
+.sbi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--txs);border:none;background:none;width:100%;text-align:left;font-family:inherit;transition:all .1s}
+.sbi:hover{background:var(--sur2);color:var(--tx)}
+.sbi.ao{background:var(--teal-l);color:var(--teal);font-weight:700}
+.sbi.as{background:var(--red-l);color:var(--red);font-weight:700}
+.sbi-ic{font-size:14px;width:17px;text-align:center;flex-shrink:0}
+.sb-out{margin:auto 10px 12px;padding:9px 12px;border-radius:8px;border:1px solid var(--bd2);background:none;color:var(--txs);font-size:13px;cursor:pointer;font-family:inherit;width:calc(100% - 20px);text-align:left;display:flex;align-items:center;gap:8px}
+.sb-out:hover{background:var(--red-l);color:var(--red);border-color:var(--red-l)}
+/* ── TOPBAR ── */
+.main-col{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;padding:0 14px;height:52px;flex-shrink:0;color:#fff;gap:8px}
+.to{background:var(--teal)}.ts{background:var(--red)}
+.tb-bk{background:rgba(255,255,255,.2);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-c{flex:1;min-width:0}
+.tb-t{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-s{font-size:10px;opacity:.8;margin-top:1px}
+.tb-r{text-align:right;flex-shrink:0}
+.tb-bs{font-size:11px;font-weight:600}
+.tb-ad{font-size:10px;opacity:.7;margin-top:1px}
+.tb-sy{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+.sd{width:7px;height:7px;border-radius:50%;background:#fff;flex-shrink:0}
+.sd.pend{background:#fde68a;animation:pp .8s ease-in-out infinite}.sd.err{background:#fca5a5}
+/* ── PAGE ── */
+.pw{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);padding:12px 12px 90px}
+/* ── BOTTOM NAV ── */
+.bot-nav{display:flex;background:var(--sur);border-top:1px solid var(--bd);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.bnb{flex:1;display:flex;flex-direction:column;align-items:center;padding:7px 2px 9px;border:none;background:none;cursor:pointer;font-family:inherit;color:var(--txt);font-size:10px;font-weight:500;gap:2px}
+.bnb.ao{color:var(--teal)}.bnb.as{color:var(--red)}
+.bn-ic{font-size:21px;line-height:1.1}
+/* ── ALERTS ── */
+.al{padding:10px 13px;border-radius:12px;font-size:13px;font-weight:500;margin-bottom:11px;border-width:1px;border-style:solid}
+.al-s{background:var(--grn-l);color:var(--grn);border-color:var(--grn-b)}
+.al-e{background:var(--red-l);color:var(--red);border-color:var(--red-b)}
+.al-w{background:var(--amb-l);color:var(--amb);border-color:var(--amb-b)}
+.al-i{background:var(--teal-l);color:var(--teal);border-color:var(--teal-b)}
+/* ── CARDS ── */
+.card{background:var(--sur);border-radius:14px;border:1px solid var(--bd);padding:14px;margin-bottom:11px;box-shadow:var(--sh)}
+.ct{font-size:13px;font-weight:700;margin-bottom:12px}
+.chdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.chdr .ct{margin-bottom:0}
+/* ── METRICS ── */
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px}
+.mg4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:600px){.mg4{grid-template-columns:1fr 1fr}}
+.mc{background:var(--sur);border-radius:12px;border:1px solid var(--bd);padding:12px 13px;box-shadow:var(--sh)}
+.ml{font-size:11px;color:var(--txs);font-weight:500;margin-bottom:4px}
+.mv{font-size:20px;font-weight:800;line-height:1;letter-spacing:-.5px}
+.ms{font-size:11px;color:var(--txs);margin-top:3px}
+.cteal{color:var(--teal)}.cgrn{color:var(--grn)}.cred{color:var(--red)}.camb{color:var(--amb)}.cmut{color:var(--txs)}
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.bg{background:var(--grn-l);color:var(--grn)}.br{background:var(--red-l);color:var(--red)}.ba{background:var(--amb-l);color:var(--amb)}.bt{background:var(--teal-l);color:var(--teal)}.bm{background:var(--sur2);color:var(--txs)}.bp{background:var(--pur-l);color:var(--pur)}
+/* ── FORMS ── */
+.fg{margin-bottom:11px}
+.fl{display:block;font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.fi{width:100%;padding:10px 12px;border:1.5px solid var(--bd2);border-radius:12px;font-size:14px;background:var(--sur);color:var(--tx);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--red)}
+select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23a8a29e' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.dh{font-size:11px;color:var(--txs);font-weight:600;margin-top:3px}
+/* ── SEARCH BOX ── */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.search-inp{width:100%;padding:11px 12px 11px 38px;border:1.5px solid var(--bd2);border-radius:12px;font-size:14px;background:var(--sur);color:var(--tx);font-family:inherit;outline:none;-webkit-appearance:none}
+.search-inp:focus{border-color:var(--teal)}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 15px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--bd2);background:var(--sur);color:var(--tx);font-family:inherit;transition:all .12s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red)}.btn-red:active{background:var(--red-d)}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-grn{background:var(--grn);color:#fff;border-color:var(--grn)}
+.btn-amb{background:var(--amb);color:#fff;border-color:var(--amb)}
+.btn-full{width:100%;padding:13px;font-size:14px}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-ghost{background:none;border-color:var(--bd2);color:var(--txs)}
+.btn-ico{padding:7px;border-radius:8px;border:1px solid var(--bd2);background:var(--sur);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center}
+/* ── TABLES ── */
+.tblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:10px;font-weight:700;color:var(--txs);text-align:left;padding:7px 8px;border-bottom:1.5px solid var(--bd);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.tbl td{padding:9px 8px;border-bottom:1px solid var(--bd);color:var(--tx);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--sur2)}
+.tr{text-align:right}.fm{font-weight:700}
+/* ── PROGRESS ── */
+.pbw{background:rgba(0,0,0,.07);border-radius:100px;height:5px;overflow:hidden;margin-top:4px}
+.pb{height:100%;border-radius:100px;background:var(--teal);transition:width .3s}
+.pb.low{background:var(--amb)}.pb.crit{background:var(--red)}
+/* ── SALE PRODUCT CARD ── */
+.ptap{background:var(--sur2);border-radius:12px;padding:12px 13px;margin-bottom:8px;border:1.5px solid var(--bd);cursor:pointer;transition:all .12s}
+.ptap:hover{border-color:var(--teal)}
+.ptap.added{border-color:var(--teal);background:var(--teal-l)}
+.pt-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pt-nm{font-size:14px;font-weight:700}
+.pt-meta{font-size:11px;color:var(--txs);margin-top:2px}
+/* ── RETURN SECTION ── */
+.ret-section{margin-top:10px;padding:10px 12px;background:rgba(180,83,9,.07);border-radius:8px;border:1px solid rgba(180,83,9,.2)}
+.ret-title{font-size:11px;font-weight:700;color:var(--amb);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.ret-grid{display:grid;gap:8px}
+.ret-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini-lbl{font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+.mini-inp{width:100%;padding:9px 10px;border:1.5px solid var(--bd2);border-radius:8px;font-size:18px;font-weight:700;background:var(--sur);color:var(--tx);font-family:inherit;text-align:right;-webkit-appearance:none;outline:none}
+.mini-inp:focus{border-color:var(--teal)}
+.sold-inp{width:100%;padding:9px 10px;border:1.5px solid var(--bd2);border-radius:8px;font-size:18px;font-weight:700;background:var(--sur);color:var(--tx);font-family:inherit;text-align:right;-webkit-appearance:none;outline:none}
+.sold-inp:focus{border-color:var(--teal)}
+.pt-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.deduction-hint{font-size:11px;color:var(--amb);font-weight:600;margin-top:4px}
+/* ── ORDER TOTAL ── */
+.total-bar{background:var(--teal-l);border:2px solid var(--teal-b);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin:13px 0}
+.tb-lbl{font-size:13px;font-weight:700;color:var(--teal)}
+.tb-val{font-size:28px;font-weight:800;color:var(--teal);letter-spacing:-.5px}
+.pay-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:11px}
+.pay-opt{padding:9px 4px;border-radius:8px;border:1.5px solid var(--bd2);background:var(--sur);cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:var(--txs);font-family:inherit;transition:all .12s}
+.pay-opt.sel{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
+.sum-line{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.sum-line:last-child{border-bottom:none;font-weight:700;font-size:14px}
+/* ── VAN HEADER ── */
+.van-hdr{background:var(--red);border-radius:14px;padding:15px;margin-bottom:11px;color:#fff;box-shadow:0 4px 14px rgba(185,28,28,.22)}
+.vh-t{font-size:17px;font-weight:800;letter-spacing:-.2px}
+.vh-s{font-size:11px;opacity:.8;margin-top:2px}
+.vh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.vhs{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 6px;text-align:center}
+.vhs-v{font-size:18px;font-weight:800}
+.vhs-l{font-size:9px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+/* ── SETTLEMENT ── */
+.settle-card{border-radius:14px;padding:16px;margin-bottom:11px;border:2px solid}
+.settle-pending{background:#fffbeb;border-color:var(--amb-b)}
+.settle-done{background:var(--grn-l);border-color:var(--grn-b)}
+.settle-short{background:var(--red-l);border-color:var(--red-b)}
+.settle-title{font-size:14px;font-weight:800;margin-bottom:4px}
+.settle-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.07);font-size:13px}
+.settle-row:last-child{border-bottom:none;font-weight:700;font-size:14px}
+.big-diff{font-size:28px;font-weight:800;text-align:center;padding:14px 0}
+/* ── SHOP LIST ── */
+.shop-group{margin-bottom:10px}
+.shop-group-label{font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;padding:6px 4px 4px}
+.shop-item{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;background:var(--sur);border-radius:10px;margin-bottom:6px;border:1.5px solid var(--bd);cursor:pointer;transition:all .12s}
+.shop-item:hover,.shop-item:active{border-color:var(--teal);background:var(--teal-l)}
+.shop-item.sel{border-color:var(--teal);background:var(--teal-l)}
+.si-nm{font-size:14px;font-weight:700}
+.si-dt{font-size:11px;color:var(--txs);margin-top:2px}
+.si-bal{text-align:right}
+/* ── STOCK ROWS ── */
+.srow{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)}
+.srow:last-child{border-bottom:none}
+.sr-l{flex:1;min-width:0;padding-right:10px}
+.sr-nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-r{display:flex;gap:12px;flex-shrink:0}
+.sr-n{text-align:center}
+.sr-n-l{font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.03em}
+.sr-n-v{font-size:16px;font-weight:800;margin-top:1px}
+/* ── SETUP ── */
+.si-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)}
+.si-item:last-child{border-bottom:none}
+.si-btns{display:flex;gap:6px;flex-shrink:0}
+/* ── MORE GRID ── */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(min-width:580px){.mgrid{grid-template-columns:repeat(3,1fr)}}
+.mc-btn{background:var(--sur);border:1px solid var(--bd);border-radius:14px;padding:14px 12px;cursor:pointer;font-family:inherit;text-align:left;display:block;width:100%;box-shadow:var(--sh);transition:all .12s}
+.mc-btn:active{transform:scale(.97)}
+.mc-ic{font-size:24px;margin-bottom:7px;display:block}
+.mc-t{font-size:13px;font-weight:700;color:var(--tx);display:block}
+.mc-s{font-size:11px;color:var(--txs);margin-top:2px;display:block}
+/* ── CLOSE DAY ── */
+.close-day-btn{background:var(--amb);color:#fff;border:none;border-radius:14px;padding:16px;width:100%;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:11px;box-shadow:0 4px 14px rgba(180,83,9,.3)}
+/* ── MISC ── */
+.off-bar{background:var(--amb-l);border:1px solid var(--amb-b);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600;color:var(--amb);display:flex;align-items:center;gap:7px}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.05em;margin:3px 0 8px}
+.empty{text-align:center;padding:34px 18px;color:var(--txs)}
+.ei{font-size:38px;margin-bottom:10px}.et{font-size:14px;font-weight:600}.es{font-size:12px;margin-top:4px;color:var(--txt)}
+.piece-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.piece-table td{padding:4px 6px;border:1px solid var(--bd)}
+.piece-table th{padding:4px 6px;border:1px solid var(--bd);background:var(--sur2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div id="ld"><div class="ld-ic">🥐</div><div class="ld-t">BakeryTrack Nepal</div><div class="ld-s">Loading...</div><div class="ld-sp"></div></div>
+<div id="login">
+  <div class="lbox">
+    <span class="lb-ic">🥐</span>
+    <div class="lb-nm">BakeryTrack</div>
+    <div class="lb-tg">Nepal Distribution Management</div>
+    <div class="rg">
+      <button class="rc" id="rc-o" onclick="pickRole('owner')"><span class="rc-ic">👑</span><span class="rc-t">Owner</span><span class="rc-s">Full Dashboard</span></button>
+      <button class="rc" id="rc-s" onclick="pickRole('salesman')"><span class="rc-ic">🚐</span><span class="rc-t">Salesman</span><span class="rc-s">Van View</span></button>
+    </div>
+    <div id="lf"></div>
+    <div class="lerr" id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-col">
+    <div class="topbar to" id="topbar">
+      <button class="tb-bk" id="tb-bk" onclick="goBack()" style="display:none">←</button>
+      <div class="tb-c"><div class="tb-t" id="tb-t">BakeryTrack</div><div class="tb-s" id="tb-s"></div></div>
+      <div class="tb-r">
+        <div class="tb-bs" id="hbs"></div>
+        <div class="tb-ad" id="had"></div>
+        <button class="tb-sy" onclick="manualSync()"><span class="sd" id="sd"></span><span id="st">Synced</span></button>
+      </div>
+    </div>
+    <div class="pw" id="pw"></div>
+    <nav class="bot-nav" id="bnav"></nav>
+  </div>
+</div>
+<script>
+'use strict';
+const SB='https://daxzuimivrwbzrkusgdl.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRheHp1aW1pdnJ3Ynpya3VzZ2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM2MTYsImV4cCI6MjA4OTIxOTYxNn0.qZtnE7u-MwRYxocR0zZur0O5QZff06DuPbhEmMNLB-g';
+const OPIN='0000';
+// ── Nepali Date ──
+const BSD=[[2000,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2001,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2002,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2003,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2004,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2005,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2006,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2007,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2008,[0,31,31,31,32,31,31,29,30,30,29,29,31]],[2009,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2010,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2011,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2012,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2013,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2014,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2015,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2016,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2017,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2018,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2019,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2020,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2021,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2022,[0,31,32,31,32,31,30,30,30,29,29,30,30]],[2023,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2024,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2025,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2026,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2027,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2028,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2029,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2030,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2031,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2032,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2033,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2034,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2035,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2036,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2037,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2038,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2039,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2040,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2041,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2042,[0,31,32,31,32,31,30,30,29,30,29,30,30]],[2043,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2044,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2045,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2046,[0,31,32,31,32,31,30,30,30,29,29,30,30]],[2047,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2048,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2049,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2050,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2051,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2052,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2053,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2054,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2055,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2056,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2057,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2058,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2059,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2060,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2061,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2062,[0,31,32,31,32,31,30,30,30,29,29,30,30]],[2063,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2064,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2065,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2066,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2067,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2068,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2069,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2070,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2071,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2072,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2073,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2074,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2075,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2076,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2077,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2078,[0,31,31,32,32,31,30,30,30,29,29,30,30]],[2079,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2080,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2081,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2082,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2083,[0,31,32,31,32,31,30,30,30,29,29,30,31]]];
+const BSM=['Baisakh','Jestha','Ashadh','Shrawan','Bhadra','Ashwin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra'];
+function adToBS(ad){const d=new Date(ad+'T00:00:00'),ref=new Date(1943,3,14);let days=Math.floor((d-ref)/86400000),y=2000,m=1,dd=1;let row=BSD.find(r=>r[0]===y);while(days>0){if(!row)break;const dim=row[1][m];if(dd+days<=dim){dd+=days;days=0;}else{days-=(dim-dd+1);dd=1;if(++m>12){m=1;y++;row=BSD.find(r=>r[0]===y);}}}return{y,m,d:dd};}
+function bsL(ad){try{const b=adToBS(ad);return`${b.y} ${BSM[b.m-1]} ${b.d}`;}catch(e){return ad;}}
+function bsS(ad){try{const b=adToBS(ad);return`${b.y}/${String(b.m).padStart(2,'0')}/${String(b.d).padStart(2,'0')}`;}catch(e){return ad;}}
+function tmrw(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
+const TODAY=new Date().toISOString().split('T')[0];
+
+// ── Currency ──
+function Rs(n){return'Rs. '+parseFloat(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function RsC(n){const v=parseFloat(n||0);if(v>=100000)return'Rs. '+(v/100000).toFixed(2)+'L';if(v>=1000)return'Rs. '+(v/1000).toFixed(1)+'K';return'Rs. '+v.toFixed(2);}
+
+// ── Piece pricing engine ──
+// Returns deduction amount for given packets and pieces returned
+function calcDeduction(product, piecePrices, packetsReturned, piecesReturned){
+  const packetsDeduction = (packetsReturned||0) * product.rate;
+  let piecesDeduction = 0;
+  if(product.has_piece_pricing && piecesReturned > 0){
+    const pp = piecePrices.filter(p=>p.product_id===product.id).sort((a,b)=>a.pieces-b.pieces);
+    // Find exact match or closest lower
+    const match = pp.find(p=>p.pieces===piecesReturned);
+    if(match){
+      piecesDeduction = match.price;
+    } else {
+      // Find the entry with the highest pieces that is <= piecesReturned
+      const lower = pp.filter(p=>p.pieces<=piecesReturned).sort((a,b)=>b.pieces-a.pieces)[0];
+      if(lower) piecesDeduction = lower.price;
+      else piecesDeduction = piecesReturned * (product.rate / product.pieces_per_packet);
+    }
+  } else if(!product.has_piece_pricing && piecesReturned > 0){
+    // packet only — pieces returned = full packets effectively
+    piecesDeduction = piecesReturned * product.rate;
+  }
+  return packetsDeduction + piecesDeduction;
+}
+
+// ── Supabase ──
+async function sb(t,method='GET',body=null,q=''){
+  const url=`${SB}/rest/v1/${t}${q}`;
+  const h={'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK};
+  if(method==='POST')h['Prefer']='return=representation';
+  const r=await fetch(url,{method,headers:h,body:body?JSON.stringify(body):null});
+  if(!r.ok){const e=await r.text();throw new Error(e);}
+  if(method==='DELETE'||r.status===204)return[];
+  return r.json();
+}
+const sbG=(t,q='')=>sb(t,'GET',null,q);
+const sbP=(t,b)=>sb(t,'POST',b);
+const sbU=(t,q,b)=>sb(t,'PATCH',b,q);
+const sbD=(t,q)=>sb(t,'DELETE',null,q);
+
+// ── Cache & Queue ──
+const CK='bkt4_';
+const cs=(k,v)=>localStorage.setItem(CK+k,JSON.stringify({d:v,t:Date.now()}));
+const cg=k=>{const r=JSON.parse(localStorage.getItem(CK+k)||'null');return r?r.d:null;};
+function qGet(){return JSON.parse(localStorage.getItem(CK+'q')||'[]');}
+function qAdd(op){const q=qGet();q.push({...op,_id:Date.now()+Math.random()});localStorage.setItem(CK+'q',JSON.stringify(q));}
+function qDel(ids){localStorage.setItem(CK+'q',JSON.stringify(qGet().filter(o=>!ids.includes(o._id))));}
+
+let isOnline=navigator.onLine;
+window.addEventListener('online',()=>{isOnline=true;updSync();processQ();});
+window.addEventListener('offline',()=>{isOnline=false;updSync();});
+
+function updSync(){
+  const el=document.getElementById('sd'),tl=document.getElementById('st');if(!el)return;
+  const q=qGet();
+  if(!isOnline){el.className='sd err';if(tl)tl.textContent='Offline';}
+  else if(q.length>0){el.className='sd pend';if(tl)tl.textContent=q.length+' pending';}
+  else{el.className='sd';if(tl)tl.textContent='Synced';}
+}
+async function processQ(){
+  if(!isOnline)return;const q=qGet();if(!q.length){updSync();return;}
+  const done=[];
+  for(const op of q){try{if(op.type==='ins')await sbP(op.table,op.data);else if(op.type==='upd')await sbU(op.table,op.q,op.data);done.push(op._id);}catch(e){}}
+  if(done.length){qDel(done);await refreshCache();render();}
+  updSync();
+}
+async function manualSync(){
+  if(!isOnline){alert('Offline — all data saved locally, will sync when internet returns.');return;}
+  await processQ();await refreshCache();render();
+}
+async function getData(t,q=''){
+  if(isOnline){try{const d=await sbG(t,q);cs(t+q,d);return d;}catch(e){}}
+  return cg(t+q)||[];
+}
+async function refreshCache(){
+  if(!isOnline)return;
+  const tables=['products','piece_prices','vans','areas','shops','production','van_loads','orders','order_details','shop_credits','payments','settlements','carryover'];
+  await Promise.all(tables.map(async t=>{try{cs(t,await sbG(t));}catch(e){}}));
+}
+async function write(t,data,uq=null){
+  if(isOnline){try{return uq?await sbU(t,uq,data):await sbP(t,data);}catch(e){}}
+  qAdd({type:uq?'upd':'ins',table:t,data,q:uq});updSync();return Array.isArray(data)?data:[data];
+}
+
+// ── Session ──
+let S={role:null,vanId:null,vanName:'',driver:''};
+function pickRole(role){
+  document.getElementById('rc-o').classList.toggle('sel',role==='owner');
+  document.getElementById('rc-s').classList.toggle('sel',role==='salesman');
+  document.getElementById('lerr').textContent='';
+  const vans=cg('vans')||[];
+  if(role==='owner'){
+    document.getElementById('lf').innerHTML=`<div class="lf"><label class="ll">Owner PIN</label><input type="password" inputmode="numeric" maxlength="6" class="li pin" id="lpin" placeholder="• • • •" onkeydown="if(event.key==='Enter')doLogin('owner')"/></div><button class="lbtn" onclick="doLogin('owner')">Sign In as Owner</button><div class="lhint">Default PIN: 0000</div>`;
+  } else {
+    document.getElementById('lf').innerHTML=`<div class="lf"><label class="ll">Your Van</label><select class="li" id="lvan"><option value="">— Select your van —</option>${vans.map(v=>`<option value="${v.id}" data-pin="${v.pin}">${v.name} — ${v.driver}</option>`).join('')}</select></div><div class="lf"><label class="ll">PIN</label><input type="password" inputmode="numeric" maxlength="6" class="li pin" id="lpin" placeholder="• • • •" onkeydown="if(event.key==='Enter')doLogin('salesman')"/></div><button class="lbtn" onclick="doLogin('salesman')">Sign In as Salesman</button><div class="lhint">Demo PINs: 1111 · 2222 · 3333</div>`;
+  }
+  setTimeout(()=>document.getElementById('lpin')?.focus(),80);
+}
+function doLogin(role){
+  const pin=(document.getElementById('lpin')||{}).value||'';
+  const err=document.getElementById('lerr');
+  if(role==='owner'){
+    if(pin!==OPIN){err.textContent='Incorrect PIN.';return;}
+    S={role:'owner',vanId:null,vanName:'',driver:''};
+  } else {
+    const sel=document.getElementById('lvan');
+    const opt=sel?sel.options[sel.selectedIndex]:null;
+    const vid=parseInt(sel?.value||0);
+    if(!vid){err.textContent='Select your van.';return;}
+    if(!opt||opt.dataset.pin!==pin){err.textContent='Incorrect PIN.';return;}
+    const van=(cg('vans')||[]).find(v=>v.id===vid)||{};
+    S={role:'salesman',vanId:vid,vanName:van.name||'',driver:van.driver||''};
+  }
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('show');
+  bootApp();
+}
+function logout(){
+  S={role:null,vanId:null};
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login').style.display='flex';
+  document.getElementById('lf').innerHTML='';
+  ['rc-o','rc-s'].forEach(id=>document.getElementById(id).classList.remove('sel'));
+  W={};curPage='';pStack=[];
+}
+
+// ── Navigation ──
+let curPage='',pStack=[],W={},_charts=[];
+function kc(){_charts.forEach(c=>{try{c.destroy();}catch(e){}});_charts=[];}
+const TITLES={
+  'o-dash':'Dashboard','o-rpt':'Daily Report','o-profit':'Profit Report',
+  'o-prod':'Production','o-load':'Van Loading','o-stock':'Van Stock',
+  'o-carry':'Stock Carryover','o-credits':'Shop Credits','o-settle':'Settlement',
+  'o-history':'Sales History','o-setup':'Setup','o-setup-prod':'Products',
+  'o-setup-vans':'Vans & PINs','o-setup-shops':'Shops','o-setup-areas':'Areas','o-more':'More',
+  's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
+  's-history':'My Sales','s-close':'Close My Day','s-more':'More'
+};
+const ROOT_O=['o-dash','o-more'];
+const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more'];
+const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Report',ic:'📈'},{id:'o-stock',l:'Stock',ic:'📦'},{id:'o-settle',l:'Settle',ic:'💰'},{id:'o-more',l:'More',ic:'⚙️'}];
+const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-credits',l:'Credits',ic:'💳'},{id:'s-close',l:'Close Day',ic:'🏁'},{id:'s-more',l:'More',ic:'⚙️'}];
+const ONAV=[
+  {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'}]},
+  {s:'Operations',i:[{id:'o-prod',l:'Production',ic:'🏭'},{id:'o-load',l:'Van Loading',ic:'🚐'},{id:'o-stock',l:'Van Stock',ic:'📦'},{id:'o-carry',l:'Carryover',ic:'🔄'}]},
+  {s:'Finance',i:[{id:'o-settle',l:'Settlement',ic:'💰'},{id:'o-credits',l:'Shop Credits',ic:'💳'},{id:'o-history',l:'Sales History',ic:'🗂'}]},
+  {s:'Setup',i:[{id:'o-setup',l:'Setup',ic:'⚙️'}]},
+];
+
+function goTo(p,push=true){
+  kc();if(push&&curPage&&curPage!==p)pStack.push(curPage);
+  curPage=p;
+  const root=(S.role==='owner'?ROOT_O:ROOT_S).includes(p);
+  document.getElementById('tb-bk').style.display=(root||pStack.length===0)?'none':'flex';
+  document.getElementById('tb-t').textContent='🥐 '+(TITLES[p]||p);
+  buildNav();render();
+  document.getElementById('pw').scrollTop=0;
+}
+function goBack(){if(pStack.length>0){const p=pStack.pop();goTo(p,false);}}
+
+function buildNav(){
+  const role=S.role,p=curPage;
+  let h=`<div class="sb-top"><div class="sb-ic">🥐</div><div class="sb-nm">BakeryTrack</div><div class="sb-sub">Nepal Distribution</div><span class="sb-pill ${role==='owner'?'spo':'sps'}">${role==='owner'?'OWNER':'SALESMAN'}</span></div>`;
+  if(role==='owner'){
+    const q=qGet();
+    h+=`<div style="padding:7px 10px 0"><button style="width:100%;padding:7px 10px;background:${q.length>0?'var(--amb-l)':'var(--teal-l)'};color:${q.length>0?'var(--amb)':'var(--teal)'};border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="manualSync()">${q.length>0?'🔄 '+q.length+' pending sync':'✓ All synced'}</button></div>`;
+    ONAV.forEach(sec=>{h+=`<div class="sb-sec"><div class="sb-lbl">${sec.s}</div>`;sec.i.forEach(n=>{h+=`<button class="sbi${p===n.id?' ao':''}" onclick="goTo('${n.id}')"><span class="sbi-ic">${n.ic}</span>${n.l}</button>`;});h+=`</div>`;});
+  } else {
+    h+=`<div class="sb-sec"><div class="sb-lbl">Sales</div><button class="sbi${p==='s-sale'?' as':''}" onclick="goTo('s-sale')"><span class="sbi-ic">🛒</span>New Sale</button><button class="sbi${p==='s-stock'?' as':''}" onclick="goTo('s-stock')"><span class="sbi-ic">📦</span>My Stock</button></div>`;
+    h+=`<div class="sb-sec"><div class="sb-lbl">Info</div><button class="sbi${p==='s-credits'?' as':''}" onclick="goTo('s-credits')"><span class="sbi-ic">💳</span>Shop Credits</button><button class="sbi${p==='s-history'?' as':''}" onclick="goTo('s-history')"><span class="sbi-ic">🗂</span>My Sales</button><button class="sbi${p==='s-close'?' as':''}" onclick="goTo('s-close')"><span class="sbi-ic">🏁</span>Close My Day</button></div>`;
+  }
+  h+=`<button class="sb-out" onclick="logout()">🚪 Sign Out</button>`;
+  document.getElementById('sidebar').innerHTML=h;
+  const bn=role==='owner'?OBN:SBN,ac=role==='owner'?'ao':'as';
+  document.getElementById('bnav').innerHTML=bn.map(b=>`<button class="bnb${p===b.id?' '+ac:''}" onclick="goTo('${b.id}')"><span class="bn-ic">${b.ic}</span><span>${b.l}</span></button>`).join('');
+}
+
+let _ar=null;
+function al(t,m){return`<div class="al al-${t}">${m}</div>`;}
+function offBar(){return isOnline?'':'<div class="off-bar">📵 Offline — data saved locally, will sync when connected</div>';}
+
+async function render(){
+  kc();
+  document.getElementById('pw').innerHTML=`<div style="padding:40px;text-align:center;color:var(--txs)"><div class="ld-sp" style="margin:0 auto;border-color:rgba(0,0,0,.12);border-top-color:var(--txs)"></div></div>`;
+  const fn=PG[curPage];if(!fn)return;
+  try{const html=await fn();document.getElementById('pw').innerHTML=html||'';if(typeof _ar==='function'){try{_ar();}catch(e){}}_ar=null;}
+  catch(e){console.error(e);document.getElementById('pw').innerHTML=al('e','Error: '+e.message);}
+}
+
+// ════════════════════════════════════════
+// PAGES
+// ════════════════════════════════════════
+const PG={};
+
+// ── OWNER: DASHBOARD ─────────────────────
+PG['o-dash']=async()=>{
+  const [products,vans,orders,rawDets,production,loads,settlements]=await Promise.all([
+    getData('products','?active=eq.true'),getData('vans','?active=eq.true&order=name'),
+    getData('orders',`?date=eq.${TODAY}`),getData('order_details'),
+    getData('production',`?date=eq.${TODAY}`),getData('van_loads',`?date=eq.${TODAY}`),
+    getData('settlements',`?date=eq.${TODAY}`)
+  ]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const prod=production.reduce((s,p)=>s+(+p.qty||0),0);
+  const vp=vans.map(v=>{
+    const vO=orders.filter(o=>o.van_id===v.id);
+    const settle=settlements.find(s=>s.van_id===v.id);
+    return{...v,sales:vO.reduce((s,o)=>s+(+o.total||0),0),cnt:vO.length,loaded:loads.filter(l=>l.van_id===v.id).reduce((s,l)=>s+(+l.qty||0),0),settle};
+  });
+  return `
+  ${offBar()}
+  <div style="font-size:11px;color:var(--txs);font-weight:600;margin-bottom:10px">📅 Today: ${bsL(TODAY)} (${TODAY})</div>
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(rev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">Damage Deducted</div><div class="mv cred">${RsC(dam)}</div></div>
+    <div class="mc"><div class="ml">Produced</div><div class="mv camb">${prod} units</div></div>
+    <div class="mc"><div class="ml">Vans Settled</div><div class="mv cteal">${settlements.filter(s=>s.status==='confirmed').length}/${vans.length}</div></div>
+  </div>
+  <div class="card"><div class="ct">Van Summary — Today</div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Van</th><th>Driver</th><th class="tr">Loaded</th><th class="tr">Orders</th><th class="tr">Sales</th><th>Settlement</th></tr></thead>
+      <tbody>${vp.map(v=>{
+        const ss=v.settle?.status||'pending';
+        const badge=ss==='confirmed'?'<span class="badge bg">✓ Settled</span>':ss==='shortfall'?'<span class="badge br">⚠ Short</span>':'<span class="badge ba">Pending</span>';
+        return`<tr><td class="fm">${v.name}</td><td>${v.driver}</td><td class="tr">${v.loaded}</td><td class="tr">${v.cnt}</td><td class="tr fm">${RsC(v.sales)}</td><td>${badge}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>
+  <div class="card"><div class="ct">Quick Actions</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-teal btn-sm" onclick="goTo('o-prod')">🏭 Production</button>
+      <button class="btn btn-teal btn-sm" onclick="goTo('o-load')">🚐 Load Vans</button>
+      <button class="btn btn-sm" onclick="goTo('o-settle')">💰 Settlement</button>
+      <button class="btn btn-sm" onclick="goTo('o-rpt')">📈 Report</button>
+      <button class="btn btn-sm" onclick="goTo('o-setup')">⚙️ Setup</button>
+    </div>
+  </div>`;
+};
+
+// ── OWNER: SETTLEMENT ────────────────────
+PG['o-settle']=async()=>{
+  const [vans,orders,dets,settlements]=await Promise.all([
+    getData('vans','?active=eq.true&order=name'),
+    getData('orders',`?date=eq.${TODAY}`),
+    getData('order_details'),
+    getData('settlements',`?date=eq.${TODAY}`)
+  ]);
+  const st=W.se||(W.se={vanId:'',cash:'',note:'',msg:''});
+  const oids=orders.map(o=>o.id);const allDets=dets.filter(d=>oids.includes(d.order_id));
+  let h=st.msg?al('s',st.msg):'';
+  h+=`<div style="font-size:11px;color:var(--txs);font-weight:600;margin-bottom:11px">Settlements for ${bsL(TODAY)} (${TODAY})</div>`;
+  vans.forEach(van=>{
+    const vO=orders.filter(o=>o.van_id===van.id);
+    const vD=allDets.filter(d=>vO.map(o=>o.id).includes(d.order_id));
+    const totalSold=vO.reduce((s,o)=>s+(+o.total||0),0);
+    const totalDam=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const totalCredit=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
+    const expectedCash=totalSold-totalCredit;
+    const settle=settlements.find(s=>s.van_id===van.id);
+    const status=settle?.status||'pending';
+    if(status==='confirmed'||status==='shortfall'){
+      const diff=+(settle.difference||0);
+      h+=`<div class="settle-card ${diff<0?'settle-short':'settle-done'}">
+        <div class="settle-title">${van.name} — ${van.driver}</div>
+        <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+        <div class="settle-row"><span>Credit Given</span><span>− ${Rs(totalCredit)}</span></div>
+        <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+        <div class="settle-row"><span>Salesman Declared</span><span>${Rs(settle.salesman_declared_cash)}</span></div>
+        <div class="settle-row"><span>Actual Received</span><span>${Rs(settle.actual_cash_received)}</span></div>
+        <div class="settle-row"><span>${diff<0?'⚠ Shortfall':'✓ Match/Surplus'}</span><span class="fm" style="color:${diff<0?'var(--red)':'var(--grn)'}">${Rs(Math.abs(diff))} ${diff<0?'short':'surplus'}</span></div>
+        <span class="badge ${diff<0?'br':'bg'}" style="margin-top:8px">${diff<0?'Shortfall':'Confirmed ✓'}</span>
+      </div>`;
+    } else {
+      // Salesman declared?
+      const declared=settle?.salesman_declared_cash;
+      if(declared!=null){
+        h+=`<div class="settle-card settle-pending">
+          <div class="settle-title">${van.name} — ${van.driver} <span class="badge ba" style="margin-left:8px">Salesman Declared</span></div>
+          <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+          <div class="settle-row"><span>Credit Given</span><span>− ${Rs(totalCredit)}</span></div>
+          <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+          <div class="settle-row"><span>Salesman Declared</span><span class="fm">${Rs(declared)}</span></div>
+          <div class="settle-row"><span>Damage Deducted</span><span>${Rs(totalDam)}</span></div>
+          <hr style="border:none;border-top:1px solid var(--bd);margin:10px 0">
+          <div class="fg"><label class="fl">Actual Cash Received (Rs.)</label><input type="number" inputmode="decimal" class="fi" id="cash-${van.id}" min="0" step="0.01" placeholder="${expectedCash.toFixed(2)}" value="${st.vanId==van.id?st.cash:''}"/></div>
+          <button class="btn btn-grn btn-full" onclick="aConfirmSettle(${van.id},${settle.id},${expectedCash.toFixed(2)})">✓ Confirm Settlement</button>
+        </div>`;
+      } else {
+        // Not yet declared
+        const hasOrders=vO.length>0;
+        h+=`<div class="settle-card settle-pending">
+          <div class="settle-title">${van.name} — ${van.driver}</div>
+          ${hasOrders?`
+          <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+          <div class="settle-row"><span>Credit Given</span><span>− ${Rs(totalCredit)}</span></div>
+          <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+          <div class="settle-row"><span>Damage Deducted</span><span>${Rs(totalDam)}</span></div>
+          <div style="font-size:12px;color:var(--txs);margin-top:10px">Waiting for salesman to close their day...</div>
+          `:`<div style="font-size:13px;color:var(--txs)">No orders recorded today</div>`}
+        </div>`;
+      }
+    }
+  });
+  return h;
+};
+
+// ── OWNER: DAILY REPORT ───────────────────
+PG['o-rpt']=async()=>{
+  const date=W.rd||TODAY;W.rd=date;
+  const [products,vans,orders,rawDets,production,loads]=await Promise.all([getData('products'),getData('vans'),getData('orders',`?date=eq.${date}`),getData('order_details'),getData('production',`?date=eq.${date}`),getData('van_loads',`?date=eq.${date}`)]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const loaded=loads.reduce((s,l)=>s+(+l.qty||0),0);
+  const soldQ=dets.reduce((s,d)=>s+(+d.qty_sold||0),0);
+  const retQ=dets.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+  return `
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="fg" style="flex:1;min-width:160px;margin:0"><input type="date" class="fi" value="${date}" onchange="W.rd=this.value;render()"/><div class="dh">BS: ${bsL(date)}</div></div>
+    <div style="display:flex;gap:7px;flex-shrink:0"><button class="btn btn-sm" onclick="exportCSV('${date}')">⬇ CSV</button><button class="btn btn-sm" onclick="printRpt('${date}')">🖨 Print</button></div>
+  </div>
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(rev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">Damage Deducted</div><div class="mv cred">${RsC(dam)}</div></div>
+    <div class="mc"><div class="ml">Units Sold</div><div class="mv">${soldQ}</div></div>
+    <div class="mc"><div class="ml">Units Remaining</div><div class="mv">${loaded-soldQ}</div></div>
+  </div>
+  <div class="card"><div class="ct">Sales by Van</div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>Van</th><th>Driver</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th></tr></thead>
+    <tbody>${vans.map(v=>{const vO=orders.filter(o=>o.van_id===v.id);const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));const r=vO.reduce((s,o)=>s+(+o.total||0),0);const dm=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);const cr=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);return`<tr><td class="fm">${v.name}</td><td>${v.driver}</td><td class="tr">${vO.length}</td><td class="tr fm">${RsC(r)}</td><td class="tr cred">${RsC(dm)}</td><td class="tr camb">${RsC(cr)}</td></tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>
+  <div class="card"><div class="ct">Sales by Product</div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>Product</th><th class="tr">Sold</th><th class="tr">Ret.Packets</th><th class="tr">Ret.Pieces</th><th class="tr">Deduction</th><th class="tr">Revenue</th></tr></thead>
+    <tbody>${products.map(p=>{const pd=dets.filter(d=>d.product_id==p.id);const s=pd.reduce((x,d)=>x+(+d.qty_sold||0),0);if(!s)return'';const rp=pd.reduce((x,d)=>x+(+d.packets_returned||0),0);const rc=pd.reduce((x,d)=>x+(+d.pieces_returned||0),0);const dm=pd.reduce((x,d)=>x+(+d.damage_deduction||0),0);const lt=pd.reduce((x,d)=>x+(+d.line_total||0),0);return`<tr><td>${p.name}</td><td class="tr">${s}</td><td class="tr">${rp}</td><td class="tr">${rc}</td><td class="tr cred">${RsC(dm)}</td><td class="tr fm">${RsC(lt)}</td></tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>`;
+};
+
+// ── OWNER: PROFIT ─────────────────────────
+PG['o-profit']=async()=>{
+  const date=W.pd||TODAY;W.pd=date;
+  const [products,vans,orders,rawDets]=await Promise.all([getData('products'),getData('vans'),getData('orders',`?date=eq.${date}`),getData('order_details')]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const cost=dets.reduce((s,d)=>{const p=products.find(x=>x.id==d.product_id);return s+(p?.cost?d.qty_sold*p.cost:0);},0);
+  const gross=rev-cost;const margin=rev>0?(gross/rev*100).toFixed(1):0;
+  const pp=products.map(p=>{const pd=dets.filter(d=>d.product_id===p.id);const r=pd.reduce((s,d)=>s+(+d.line_total||0),0);const c=pd.reduce((s,d)=>s+d.qty_sold*(p.cost||0),0);const s=pd.reduce((s,d)=>s+(+d.qty_sold||0),0);return{...p,r,c,profit:r-c,sold:s};}).filter(p=>p.sold>0).sort((a,b)=>b.profit-a.profit);
+  return `
+  <div class="fg"><input type="date" class="fi" value="${date}" onchange="W.pd=this.value;render()"/><div class="dh">BS: ${bsL(date)}</div></div>
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(rev)}</div></div>
+    <div class="mc"><div class="ml">Cost</div><div class="mv cred">${RsC(cost)}</div></div>
+    <div class="mc"><div class="ml">Gross Profit</div><div class="mv" style="color:${gross>=0?'var(--grn)':'var(--red)'}">${RsC(gross)}</div></div>
+    <div class="mc"><div class="ml">Margin</div><div class="mv" style="color:${parseFloat(margin)>=20?'var(--grn)':parseFloat(margin)>=10?'var(--amb)':'var(--red)'}">${margin}%</div></div>
+  </div>
+  <div class="card"><div class="ct">Profit by Product</div>
+    ${pp.length?`<div class="tblw"><table class="tbl"><thead><tr><th>Product</th><th class="tr">Sold</th><th class="tr">Revenue</th><th class="tr">Profit</th></tr></thead>
+    <tbody>${pp.map(p=>`<tr><td>${p.name}</td><td class="tr">${p.sold}</td><td class="tr">${RsC(p.r)}</td><td class="tr fm" style="color:${p.profit>=0?'var(--grn)':'var(--red)'}">${RsC(p.profit)}</td></tr>`).join('')}</tbody>
+    </table></div>`:'<div class="empty" style="padding:12px"><div class="et">No sales on this date</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: PRODUCTION ─────────────────────
+PG['o-prod']=async()=>{
+  const products=await getData('products','?active=eq.true&order=sort_order,name');
+  const prods=await getData('production',`?date=eq.${TODAY}&order=created_at.desc`);
+  const st=W.pr||(W.pr={date:TODAY,pid:'',qty:'',msg:''});
+  const tmDate=tmrw();
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">Log Production</div>
+    <div class="fg"><label class="fl">Production Date</label><input type="date" class="fi" value="${st.date}" onchange="W.pr.date=this.value"/><div class="dh">BS: ${bsL(st.date)}</div></div>
+    <div class="fg"><label class="fl">Product</label><select class="fi" onchange="W.pr.pid=this.value"><option value="">— Select —</option>${products.map(p=>`<option value="${p.id}" ${st.pid==p.id?'selected':''}>${p.name}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Quantity (packets)</label><input type="number" inputmode="numeric" class="fi" min="1" value="${st.qty}" placeholder="e.g. 200" oninput="W.pr.qty=this.value"/></div>
+    <button class="btn btn-teal btn-full" onclick="aProd()">Log Production</button>
+  </div>
+  <div class="card"><div class="chdr"><div class="ct">Today's Production</div><div style="font-size:11px;color:var(--txs)">${bsL(TODAY)}</div></div>
+    ${prods.length?`<div class="tblw"><table class="tbl"><thead><tr><th>Product</th><th class="tr">Qty</th><th></th></tr></thead><tbody>
+    ${prods.map(p=>{const pr=products.find(x=>x.id==p.product_id);return`<tr><td>${pr?pr.name:'?'}</td><td class="tr fm">${p.qty}</td><td class="tr"><button class="btn-ico" onclick="delIt('production','?id=eq.${p.id}')">🗑</button></td></tr>`;}).join('')}
+    <tr><td class="fm">Total</td><td class="tr fm">${prods.reduce((s,p)=>s+(+p.qty||0),0)}</td><td></td></tr>
+    </tbody></table></div>`:'<div class="empty" style="padding:16px"><div class="ei">🏭</div><div class="et">Nothing logged</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: VAN LOADING ────────────────────
+PG['o-load']=async()=>{
+  const [vans,products,loads,production]=await Promise.all([getData('vans','?active=eq.true&order=name'),getData('products','?active=eq.true&order=sort_order,name'),getData('van_loads'),getData('production')]);
+  const st=W.vl||(W.vl={date:tmrw(),vanId:'',pid:'',qty:'',msg:''});
+  const tp={};production.filter(p=>p.date<=st.date).forEach(p=>{tp[p.product_id]=(tp[p.product_id]||0)+(+p.qty||0);});
+  const tl=loads.filter(l=>l.date===st.date);
+  const alreadyLoaded={};tl.forEach(l=>{alreadyLoaded[l.product_id]=(alreadyLoaded[l.product_id]||0)+(+l.qty||0);});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="al al-i">📅 Evening loading for tomorrow's delivery. Date is pre-set to tomorrow.</div>
+  <div class="card"><div class="ct">Load Van</div>
+    <div class="fg"><label class="fl">Delivery Date (usually tomorrow)</label><input type="date" class="fi" value="${st.date}" onchange="W.vl.date=this.value;render()"/><div class="dh">BS: ${bsL(st.date)}</div></div>
+    <div class="fg"><label class="fl">Van</label><select class="fi" onchange="W.vl.vanId=this.value"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name} — ${v.driver}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Product</label><select class="fi" onchange="W.vl.pid=this.value;render()"><option value="">— Select product —</option>${products.map(p=>{const avail=(tp[p.id]||0)-(alreadyLoaded[p.id]||0);return`<option value="${p.id}" ${st.pid==p.id?'selected':''}>${p.name} (available: ${avail})</option>`;}).join('')}</select></div>
+    <div class="fg"><label class="fl">Quantity (packets)</label><input type="number" inputmode="numeric" class="fi" min="1" value="${st.qty}" placeholder="Qty" oninput="W.vl.qty=this.value"/></div>
+    <button class="btn btn-teal btn-full" onclick="aLoad()">Load to Van</button>
+  </div>
+  <div class="card"><div class="ct">Loads for ${bsL(st.date)}</div>
+    ${tl.length?`<div class="tblw"><table class="tbl"><thead><tr><th>Van</th><th>Product</th><th class="tr">Qty</th><th></th></tr></thead><tbody>
+    ${tl.map(l=>{const v=vans.find(x=>x.id==l.van_id),p=products.find(x=>x.id==l.product_id);return`<tr><td>${v?v.name:'?'}</td><td>${p?p.name:'?'}</td><td class="tr">${l.qty}</td><td class="tr"><button class="btn-ico" onclick="delIt('van_loads','?id=eq.${l.id}')">🗑</button></td></tr>`;}).join('')}
+    </tbody></table></div>`:'<div class="empty" style="padding:14px"><div class="et">No loads for this date</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: VAN STOCK ──────────────────────
+PG['o-stock']=async()=>{
+  const [vans,products,loads,orders,rawDets,carries]=await Promise.all([getData('vans','?active=eq.true&order=name'),getData('products','?active=eq.true&order=sort_order,name'),getData('van_loads',`?date=eq.${TODAY}`),getData('orders',`?date=eq.${TODAY}`),getData('order_details'),getData('carryover',`?to_date=eq.${TODAY}`)]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const fv=W.fv||'';
+  let h=`<div class="fg"><select class="fi" onchange="W.fv=parseInt(this.value)||'';render()"><option value="">All Vans</option>${vans.map(v=>`<option value="${v.id}" ${fv==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>`;
+  (fv?vans.filter(v=>v.id==fv):vans).forEach(van=>{
+    let rows='',ok=false;
+    products.forEach(p=>{
+      const l=loads.filter(x=>x.van_id===van.id&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
+      const c=carries.filter(x=>x.van_id===van.id&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
+      if(!l&&!c)return;ok=true;
+      const sold=dets.filter(x=>orders.filter(o=>o.van_id===van.id).map(o=>o.id).includes(x.order_id)&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty_sold||0),0);
+      const tot=l+c,rem=tot-sold,pct=tot>0?rem/tot*100:0;
+      rows+=`<div class="srow"><div class="sr-l"><div class="sr-nm">${p.name}</div><div class="pbw" style="max-width:120px"><div class="pb ${pct<20?'crit':pct<40?'low':''}" style="width:${Math.max(0,pct).toFixed(0)}%"></div></div></div>
+        <div class="sr-r"><div class="sr-n"><div class="sr-n-l">Loaded</div><div class="sr-n-v">${tot}</div></div><div class="sr-n"><div class="sr-n-l">Sold</div><div class="sr-n-v cteal">${sold}</div></div><div class="sr-n"><div class="sr-n-l">Left</div><div class="sr-n-v" style="color:${pct<20?'var(--red)':pct<40?'var(--amb)':'var(--tx)'}">${rem}</div></div></div></div>`;
+    });
+    h+=`<div class="card"><div class="chdr"><div><div style="font-size:15px;font-weight:700">${van.name}</div><div style="font-size:12px;color:var(--txs)">${van.driver}</div></div><span class="badge ${ok?'bt':'bm'}">${ok?'Active':'Not loaded'}</span></div>${ok?rows:'<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">Not loaded today</div></div>'}</div>`;
+  });
+  return h;
+};
+
+// ── OWNER: CARRYOVER ─────────────────────
+PG['o-carry']=async()=>{
+  const vans=await getData('vans','?active=eq.true&order=name');
+  const products=await getData('products','?active=eq.true&order=sort_order,name');
+  const st=W.co||(W.co={date:TODAY,vanId:'',msg:''});
+  const prev=new Date(st.date);prev.setDate(prev.getDate()-1);const ps=prev.toISOString().split('T')[0];
+  let vr=[];
+  if(st.vanId){
+    const [loads,orders,rawDets,carries]=await Promise.all([getData('van_loads',`?date=eq.${ps}&van_id=eq.${st.vanId}`),getData('orders',`?date=eq.${ps}&van_id=eq.${st.vanId}`),getData('order_details'),getData('carryover',`?to_date=eq.${st.date}&van_id=eq.${st.vanId}`)]);
+    const oids=orders.map(o=>o.id);const od=rawDets.filter(d=>oids.includes(d.order_id));
+    vr=products.map(p=>{const l=loads.filter(l=>l.product_id===p.id).reduce((s,l)=>s+(+l.qty||0),0);const s=od.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.qty_sold||0),0);const rem=l-s;const ex=carries.find(c=>c.product_id===p.id);const c=ex?(+ex.qty||0):0;if(rem<=0&&c===0)return null;return{p,rem,c,exId:ex?.id};}).filter(Boolean);
+  }
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">Stock Carryover</div>
+    <p style="font-size:13px;color:var(--txs);margin-bottom:12px">Transfer unsold stock from previous day into today's van load.</p>
+    <div class="fg"><label class="fl">Transfer to Date</label><input type="date" class="fi" value="${st.date}" onchange="W.co.date=this.value;render()"/><div class="dh">BS: ${bsL(st.date)}</div></div>
+    <div class="fg"><label class="fl">Van</label><select class="fi" onchange="W.co.vanId=this.value;render()"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    ${st.vanId&&vr.length?`<p style="font-size:12px;font-weight:600;color:var(--txs);margin-bottom:8px">Remaining from ${bsL(ps)}:</p>
+    <div class="tblw"><table class="tbl" style="margin-bottom:12px"><thead><tr><th>Product</th><th class="tr">Remaining</th><th class="tr">Carry Qty</th></tr></thead>
+    <tbody>${vr.map((r,i)=>`<tr><td>${r.p.name}</td><td class="tr">${r.rem}</td><td class="tr"><input type="number" inputmode="numeric" min="0" max="${r.rem}" value="${r.c}" style="width:62px;padding:5px 7px;border:1.5px solid var(--bd2);border-radius:6px;font-size:14px;text-align:right;font-family:inherit" id="co-${i}"/></td></tr>`).join('')}
+    </tbody></table></div>
+    <button class="btn btn-teal btn-full" onclick="aCarry(${JSON.stringify(vr.map((r,i)=>({pid:r.p.id,exId:r.exId||null,idx:i})))})">Save Carryover</button>`
+    :(st.vanId?'<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">No remaining stock</div></div>':'<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">Select a van</div></div>')}
+  </div>`;
+};
+
+// ── OWNER: SHOP CREDITS ───────────────────
+PG['o-credits']=async()=>{
+  const [shops,vans,credits,payments]=await Promise.all([getData('shops','?active=eq.true&order=name'),getData('vans'),getData('shop_credits'),getData('payments','?order=created_at.desc&limit=50')]);
+  const st=W.cr||(W.cr={sid:'',amt:'',note:'',msg:''});
+  const wb=shops.map(s=>{const cr=credits.find(c=>c.shop_id===s.id);return{...s,bal:cr?(+cr.balance||0):0};}).sort((a,b)=>b.bal-a.bal);
+  const owed=wb.filter(s=>s.bal>0).reduce((t,s)=>t+s.bal,0);
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="mg"><div class="mc"><div class="ml">Total Outstanding</div><div class="mv cred">${RsC(owed)}</div><div class="ms">${wb.filter(s=>s.bal>0).length} shops owe</div></div><div class="mc"><div class="ml">Credits Issued</div><div class="mv cgrn">${RsC(Math.abs(wb.filter(s=>s.bal<0).reduce((t,s)=>t+s.bal,0)))}</div></div></div>
+  <div class="card"><div class="ct">Record Payment</div>
+    <div class="fg"><label class="fl">Shop</label><select class="fi" onchange="W.cr.sid=parseInt(this.value)||'';render()"><option value="">— Select shop —</option>${shops.map(s=>{const b=wb.find(x=>x.id===s.id)?.bal||0;return`<option value="${s.id}" ${st.sid==s.id?'selected':''}>${s.name} (${b>0?'owes '+RsC(b):b<0?'credit':' clear'})</option>`;}).join('')}</select></div>
+    <div class="fg"><label class="fl">Amount (Rs.)</label><input type="number" inputmode="decimal" class="fi" min="0" step="0.01" value="${st.amt}" placeholder="0.00" oninput="W.cr.amt=this.value"/></div>
+    <div class="fg"><label class="fl">Note</label><input type="text" class="fi" value="${st.note}" placeholder="e.g. Cash received" oninput="W.cr.note=this.value"/></div>
+    <button class="btn btn-grn btn-full" onclick="aPayment()">Record Payment</button>
+  </div>
+  <div class="card"><div class="ct">All Shop Balances</div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>Shop</th><th>Van</th><th class="tr">Balance</th><th class="tr">Status</th></tr></thead>
+    <tbody>${wb.map(s=>{const v=vans.find(x=>x.id===s.van_id);return`<tr><td>${s.name}</td><td style="font-size:11px">${v?v.name:'—'}</td><td class="tr fm" style="color:${s.bal>0?'var(--red)':s.bal<0?'var(--grn)':'var(--txs)'}">${s.bal>0?RsC(s.bal):s.bal<0?'−'+RsC(-s.bal):'—'}</td><td class="tr"><span class="badge ${s.bal>0?'br':s.bal<0?'bg':'bm'}">${s.bal>0?'Owes':s.bal<0?'Credit':'Clear'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>
+  ${payments.length?`<div class="card"><div class="ct">Payment History</div><div class="tblw"><table class="tbl"><thead><tr><th>BS Date</th><th>Shop</th><th class="tr">Amount</th><th>Note</th></tr></thead>
+  <tbody>${payments.slice(0,30).map(p=>{const s=shops.find(x=>x.id==p.shop_id);return`<tr><td style="font-size:11px">${bsS(p.date)}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr cgrn fm">${RsC(p.amount)}</td><td style="font-size:12px;color:var(--txs)">${p.note||'—'}</td></tr>`;}).join('')}</tbody>
+  </table></div></div>`:''}`;
+};
+
+// ── OWNER: SALES HISTORY ─────────────────
+PG['o-history']=async()=>{
+  const [orders,vans,shops]=await Promise.all([getData('orders','?order=created_at.desc&limit=200'),getData('vans'),getData('shops')]);
+  return `<div class="card"><div class="chdr"><div class="ct">All Sales Orders</div><span class="badge bt">${orders.length}</span></div>
+    ${orders.length?`<div class="tblw"><table class="tbl"><thead><tr><th>BS Date</th><th>AD</th><th>Van</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
+    <tbody>${orders.map(o=>{const v=vans.find(x=>x.id==o.van_id),s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:11px">${o.date}</td><td style="font-size:12px">${v?v.name:'?'}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>`:'<div class="empty"><div class="ei">🗂</div><div class="et">No orders yet</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: SETUP ──────────────────────────
+PG['o-setup']=()=>Promise.resolve(`
+  <div class="card"><div class="ct">Setup</div>
+    <div class="mgrid">
+      <button class="mc-btn" onclick="goTo('o-setup-prod')"><span class="mc-ic">🍞</span><span class="mc-t">Products</span><span class="mc-s">Names, rates, piece pricing</span></button>
+      <button class="mc-btn" onclick="goTo('o-setup-vans')"><span class="mc-ic">🚌</span><span class="mc-t">Vans & PINs</span><span class="mc-s">Van names, drivers, PINs</span></button>
+      <button class="mc-btn" onclick="goTo('o-setup-shops')"><span class="mc-ic">🏪</span><span class="mc-t">Shops</span><span class="mc-s">Customer shops, assign vans</span></button>
+      <button class="mc-btn" onclick="goTo('o-setup-areas')"><span class="mc-ic">📍</span><span class="mc-t">Areas / Zones</span><span class="mc-s">Group shops by area</span></button>
+    </div>
+  </div>`);
+
+// ── OWNER: SETUP PRODUCTS ─────────────────
+PG['o-setup-prod']=async()=>{
+  const [products,pps]=await Promise.all([getData('products','?order=sort_order,name'),getData('piece_prices','?order=product_id,pieces')]);
+  const st=W.prd||(W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Product':'Add New Product'}</div>
+    <div class="fg"><label class="fl">Product Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Bread" oninput="W.prd.name=this.value"/></div>
+    <div class="fg"><label class="fl">Selling Rate (Rs.) — per packet</label><input type="number" inputmode="decimal" class="fi" step="0.01" value="${st.rate}" placeholder="0.00" oninput="W.prd.rate=this.value"/></div>
+    <div class="fg"><label class="fl" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="hp" ${st.hasPiece?'checked':''} onchange="W.prd.hasPiece=this.checked;if(!this.checked)W.prd.ppRows=[];render()"/> Has piece pricing (partial returns)</label></div>
+    ${st.hasPiece?`
+    <div class="fg"><label class="fl">Pieces per packet</label><input type="number" inputmode="numeric" class="fi" min="1" max="20" value="${st.piecesPerPkt}" oninput="W.prd.piecesPerPkt=parseInt(this.value)||1;buildPpRows();render()"/></div>
+    <div style="font-size:12px;font-weight:600;color:var(--txs);margin-bottom:8px">Piece price table — enter deduction for each piece count:</div>
+    ${Array.from({length:st.piecesPerPkt},(_, i)=>i+1).map(n=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <label style="font-size:13px;min-width:80px">${n} piece${n>1?'s':''}</label>
+        <input type="number" inputmode="decimal" class="fi" style="max-width:120px" step="0.01" placeholder="Rs. 0.00" value="${st.ppRows[n-1]||''}" oninput="W.prd.ppRows[${n-1}]=parseFloat(this.value)||0"/>
+        ${n===st.piecesPerPkt?`<span style="font-size:11px;color:var(--txs)">(= full packet)</span>`:''}
+      </div>`).join('')}
+    `:''}
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-teal" style="flex:1" onclick="aSavePrd()">${st.edit?'Update':'Add Product'}</button>
+      ${st.edit?`<button class="btn btn-ghost" onclick="W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''};render()">Cancel</button>`:''}
+    </div>
+  </div>
+  <div class="card"><div class="ct">All Products (${products.length})</div>
+    ${products.map(p=>{
+      const pp=pps.filter(x=>x.product_id===p.id).sort((a,b)=>a.pieces-b.pieces);
+      return`<div class="si-item">
+        <div>
+          <div style="font-size:13px;font-weight:700">${p.name}</div>
+          <div style="font-size:11px;color:var(--txs);margin-top:2px">Packet: ${Rs(p.rate)} ${p.has_piece_pricing?'· '+p.pieces_per_packet+' pcs/pkt':'· Packet only'}</div>
+          ${p.has_piece_pricing&&pp.length?`<div style="font-size:10px;color:var(--amb);margin-top:2px">${pp.map(x=>`${x.pieces}pc=Rs.${x.price}`).join(' · ')}</div>`:''}
+        </div>
+        <div class="si-btns"><button class="btn-ico" onclick="aEditPrd(${p.id})">✏️</button><button class="btn-ico" onclick="delIt('products','?id=eq.${p.id}')">🗑</button></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+};
+
+// ── OWNER: SETUP VANS ─────────────────────
+PG['o-setup-vans']=async()=>{
+  const vans=await getData('vans','?order=name');
+  const st=W.van||(W.van={name:'',driver:'',pin:'',edit:null,msg:''});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Van':'Add New Van'}</div>
+    <div class="fg"><label class="fl">Van Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Van Alpha" oninput="W.van.name=this.value"/></div>
+    <div class="fg"><label class="fl">Driver Name</label><input type="text" class="fi" value="${st.driver}" placeholder="Driver's full name" oninput="W.van.driver=this.value"/></div>
+    <div class="fg"><label class="fl">Salesman PIN (4–6 digits)</label><input type="text" inputmode="numeric" class="fi" maxlength="6" value="${st.pin}" placeholder="e.g. 1234" oninput="W.van.pin=this.value"/><div class="dh">Salesman enters this PIN to log in</div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveVan()">${st.edit?'Update':'Add Van'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.van={name:'',driver:'',pin:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
+  </div>
+  <div class="card"><div class="ct">All Vans</div>
+    ${vans.map(v=>`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${v.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">Driver: ${v.driver} · PIN: ${v.pin||'—'}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditVan(${v.id})">✏️</button></div></div>`).join('')}
+  </div>`;
+};
+
+// ── OWNER: SETUP AREAS ────────────────────
+PG['o-setup-areas']=async()=>{
+  const [areas,vans]=await Promise.all([getData('areas','?order=van_id,sort_order'),getData('vans','?active=eq.true&order=name')]);
+  const st=W.ar||(W.ar={name:'',vanId:'',edit:null,msg:''});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Area':'Add New Area'}</div>
+    <div class="fg"><label class="fl">Area Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Kathmandu Central" oninput="W.ar.name=this.value"/></div>
+    <div class="fg"><label class="fl">Van (which van serves this area)</label><select class="fi" onchange="W.ar.vanId=this.value"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveArea()">${st.edit?'Update':'Add Area'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.ar={name:'',vanId:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
+  </div>
+  <div class="card"><div class="ct">All Areas</div>
+    ${areas.map(a=>{const v=vans.find(x=>x.id==a.van_id);return`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${a.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${v?v.name:'No van'}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditArea(${a.id})">✏️</button><button class="btn-ico" onclick="delIt('areas','?id=eq.${a.id}')">🗑</button></div></div>`;}).join('')}
+  </div>`;
+};
+
+// ── OWNER: SETUP SHOPS ────────────────────
+PG['o-setup-shops']=async()=>{
+  const [shops,vans,areas,credits]=await Promise.all([getData('shops','?order=name'),getData('vans','?active=eq.true&order=name'),getData('areas','?order=van_id,name'),getData('shop_credits')]);
+  const st=W.shp||(W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:''});
+  const filtAreas=st.vanId?areas.filter(a=>a.van_id==st.vanId):areas;
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Shop':'Add New Shop'}</div>
+    <div class="fg"><label class="fl">Shop Name *</label><input type="text" class="fi" value="${st.name}" placeholder="Shop name" oninput="W.shp.name=this.value"/></div>
+    <div class="fg"><label class="fl">Address</label><input type="text" class="fi" value="${st.address}" placeholder="Street / area" oninput="W.shp.address=this.value"/></div>
+    <div class="fg"><label class="fl">Phone</label><input type="text" class="fi" value="${st.phone}" placeholder="984X-XXXX" oninput="W.shp.phone=this.value"/></div>
+    <div class="fg"><label class="fl">Contact Name</label><input type="text" class="fi" value="${st.contact}" placeholder="Shop owner name" oninput="W.shp.contact=this.value"/></div>
+    <div class="fg"><label class="fl">Assigned Van *</label><select class="fi" onchange="W.shp.vanId=this.value;W.shp.areaId='';render()"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Area / Zone</label><select class="fi" onchange="W.shp.areaId=this.value"><option value="">— Select area —</option>${filtAreas.map(a=>`<option value="${a.id}" ${st.areaId==a.id?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    ${!st.edit?`<div class="fg"><label class="fl">Opening Balance (Rs.) — if they already owe</label><input type="number" inputmode="decimal" class="fi" step="0.01" value="${st.openBal}" placeholder="0.00" oninput="W.shp.openBal=this.value"/></div>`:''}
+    <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveShop()">${st.edit?'Update':'Add Shop'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
+  </div>
+  <div class="card"><div class="chdr"><div class="ct">All Shops (${shops.length})</div></div>
+    ${shops.map(s=>{const v=vans.find(x=>x.id==s.van_id),a=areas.find(x=>x.id==s.area_id);const cr=credits.find(c=>c.shop_id===s.id);const bal=cr?(+cr.balance||0):0;return`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${v?v.name:'—'}${a?' · '+a.name:''} · ${s.phone||'No phone'}${bal!==0?' · <b style="color:'+(bal>0?'var(--red)':'var(--grn)')+'">'+RsC(Math.abs(bal))+'</b>':''}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditShop(${s.id})">✏️</button></div></div>`;}).join('')}
+  </div>`;
+};
+
+// ── OWNER: MORE ───────────────────────────
+PG['o-more']=()=>Promise.resolve(`<div class="mgrid">
+  ${[{ic:'🏭',t:'Production',s:'Log factory output',p:'o-prod'},{ic:'🚐',t:'Van Loading',s:'Evening van loads',p:'o-load'},{ic:'🔄',t:'Carryover',s:'Move leftover stock',p:'o-carry'},{ic:'💰',t:'Settlement',s:'End of day cash',p:'o-settle'},{ic:'💰',t:'Profit Report',s:'Revenue vs cost',p:'o-profit'},{ic:'⚙️',t:'Setup',s:'Products, vans, shops',p:'o-setup'},{ic:'🗂',t:'Sales History',s:'All orders',p:'o-history'},{ic:'💳',t:'Shop Credits',s:'Outstanding balances',p:'o-credits'}].map(i=>`<button class="mc-btn" onclick="goTo('${i.p}')"><span class="mc-ic">${i.ic}</span><span class="mc-t">${i.t}</span><span class="mc-s">${i.s}</span></button>`).join('')}
+</div>`);
+
+// ════════════════════════════════════════
+// SALESMAN PAGES
+// ════════════════════════════════════════
+
+// ── SALESMAN: NEW SALE ────────────────────
+PG['s-sale']=async()=>{
+  const vanId=S.vanId;
+  const [products,pricePts,myShops,areas,loads,orders,rawDets,carries,credits]=await Promise.all([
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('piece_prices','?order=product_id,pieces'),
+    getData('shops',`?van_id=eq.${vanId}&active=eq.true&order=name`),
+    getData('areas',`?van_id=eq.${vanId}&order=sort_order,name`),
+    getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('order_details'),
+    getData('carryover',`?to_date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('shop_credits')
+  ]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const todayRev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const totalLoaded=loads.reduce((s,l)=>s+(+l.qty||0),0);
+
+  function calcStk(pid){
+    const l=loads.filter(x=>x.product_id==pid).reduce((s,x)=>s+(+x.qty||0),0);
+    const c=carries.filter(x=>x.product_id==pid).reduce((s,x)=>s+(+x.qty||0),0);
+    const s=dets.filter(x=>x.product_id==pid).reduce((s,x)=>s+(+x.qty_sold||0),0);
+    return l+c-s;
+  }
+
+  const st=W.sale||(W.sale={shopId:'',shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:TODAY,rows:[],pm:'cash',paidNow:0,msg:''});
+  W.sale=st;
+
+  const selShop=myShops.find(s=>s.id==st.shopId);
+  const shopBal=selShop?(+(credits.find(c=>c.shop_id===selShop.id)?.balance)||0):0;
+  const availP=products.filter(p=>calcStk(p.id)>0);
+
+  // Calc grand total
+  let grand=0;
+  st.rows.forEach(r=>{
+    const p=products.find(x=>x.id==r.pid);if(!p)return;
+    const sold=r.qty*p.rate;
+    const ded=calcDeduction(p,pricePts,r.pkts,r.pcs);
+    grand+=Math.max(0,sold-ded);
+  });
+
+  let h=st.msg?`<div class="al al-s">${st.msg}</div>`:'';
+  h+=offBar();
+
+  // Van header
+  h+=`<div class="van-hdr"><div class="vh-t">🚐 ${S.vanName}</div><div class="vh-s">${S.driver} · ${bsL(TODAY)} · ${TODAY}</div>
+    <div class="vh-stats"><div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div><div class="vhs"><div class="vhs-v">${totalLoaded}</div><div class="vhs-l">Loaded</div></div><div class="vhs"><div class="vhs-v">${RsC(todayRev).replace('Rs. ','')}</div><div class="vhs-l">Revenue</div></div></div>
+  </div>`;
+
+  // Add new shop form
+  if(st.addingShop){
+    h+=`<div class="card"><div class="chdr"><div class="ct">Add New Shop</div><button class="btn btn-ghost btn-sm" onclick="W.sale.addingShop=false;render()">Cancel</button></div>
+      <div class="fg"><label class="fl">Shop Name *</label><input type="text" class="fi" value="${st.ns.name}" placeholder="Shop name" oninput="W.sale.ns.name=this.value"/></div>
+      <div class="fg"><label class="fl">Address</label><input type="text" class="fi" value="${st.ns.address}" placeholder="Area / street" oninput="W.sale.ns.address=this.value"/></div>
+      <div class="fg"><label class="fl">Phone</label><input type="text" class="fi" value="${st.ns.phone}" placeholder="984X-XXXX" oninput="W.sale.ns.phone=this.value"/></div>
+      <div class="fg"><label class="fl">Contact Name</label><input type="text" class="fi" value="${st.ns.contact}" placeholder="Owner name" oninput="W.sale.ns.contact=this.value"/></div>
+      <button class="btn btn-teal btn-full" onclick="aSaveNewShop(${vanId})">💾 Save & Select Shop</button>
+    </div>`;
+    return h;
+  }
+
+  // Shop selector with search and area grouping
+  h+=`<div class="card"><div class="chdr"><div class="ct">Select Shop</div><button class="btn btn-sm btn-teal" onclick="W.sale.addingShop=true;W.sale.ns={name:'',address:'',phone:'',contact:''};render()">＋ New Shop</button></div>
+    <div class="search-wrap"><span class="search-ic">🔍</span><input type="text" class="search-inp" placeholder="Search shop name..." value="${st.shopSearch||''}" oninput="W.sale.shopSearch=this.value;renderShopList()" id="shop-search"/></div>
+    <div id="shop-list">`;
+
+  // Render shop list grouped by area
+  const filtShops=myShops.filter(s=>!st.shopSearch||s.name.toLowerCase().includes(st.shopSearch.toLowerCase()));
+  if(st.shopSearch){
+    // Flat list when searching
+    h+=filtShops.map(s=>`<div class="shop-item ${st.shopId==s.id?'sel':''}" onclick="selectShop(${s.id})"><div><div class="si-nm">${s.name}</div><div class="si-dt">${s.address||''}</div></div>${(() => {const b=+(credits.find(c=>c.shop_id===s.id)?.balance||0);return b!==0?`<div class="si-bal"><div style="font-size:13px;font-weight:700;color:${b>0?'var(--red)':'var(--grn)'}">${b>0?Rs(b):'Cr '+Rs(-b)}</div></div>`:'';})()}</div>`).join('');
+  } else {
+    // Grouped by area
+    const noArea=filtShops.filter(s=>!s.area_id);
+    areas.forEach(a=>{
+      const aShops=filtShops.filter(s=>s.area_id===a.id);
+      if(!aShops.length)return;
+      h+=`<div class="shop-group-label">📍 ${a.name}</div>`;
+      h+=aShops.map(s=>{const b=+(credits.find(c=>c.shop_id===s.id)?.balance||0);return`<div class="shop-item ${st.shopId==s.id?'sel':''}" onclick="selectShop(${s.id})"><div><div class="si-nm">${s.name}</div><div class="si-dt">${s.address||''} ${s.phone?'· '+s.phone:''}</div></div>${b!==0?`<div class="si-bal"><div style="font-size:13px;font-weight:700;color:${b>0?'var(--red)':'var(--grn)'}">${b>0?Rs(b):'Cr '+Rs(-b)}</div></div>`:''}</div>`;}).join('');
+    });
+    if(noArea.length){h+=`<div class="shop-group-label">Other</div>${noArea.map(s=>`<div class="shop-item ${st.shopId==s.id?'sel':''}" onclick="selectShop(${s.id})"><div><div class="si-nm">${s.name}</div><div class="si-dt">${s.address||''}</div></div></div>`).join('')}`;}
+  }
+  h+=`</div>`;
+
+  if(selShop){
+    h+=`<div style="margin-top:8px;padding:10px 12px;background:var(--teal-l);border-radius:10px;border:1.5px solid var(--teal-b);display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:14px;font-weight:700;color:var(--teal)">✓ ${selShop.name}</div>${shopBal!==0?`<div style="font-size:12px;font-weight:700;color:${shopBal>0?'var(--red)':'var(--grn)'};margin-top:2px">${shopBal>0?'⚠ Owes: '+Rs(shopBal):'✓ Credit: '+Rs(-shopBal)}</div>`:''}</div>
+      <button class="btn btn-ghost btn-sm" onclick="W.sale.shopId='';W.sale.rows=[];render()">Change</button>
+    </div>`;
+  }
+  h+=`</div>`;
+
+  // Date
+  h+=`<div class="card"><div class="fg" style="margin:0"><label class="fl">Sale Date</label><input type="date" class="fi" value="${st.date}" onchange="W.sale.date=this.value;render()"/><div class="dh">BS: ${bsL(st.date)}</div></div></div>`;
+
+  // Products (only if shop selected)
+  if(st.shopId){
+    h+=`<div class="sec-lbl">Products — tap to add</div>`;
+    if(!availP.length){
+      h+=`<div class="card"><div class="empty"><div class="ei">📦</div><div class="et">No stock in your van</div><div class="es">Contact your manager</div></div></div>`;
+    } else {
+      availP.forEach(p=>{
+        const row=st.rows.find(r=>r.pid==p.id);
+        const stk=calcStk(p.id);
+        const pp=pricePts.filter(x=>x.product_id===p.id).sort((a,b)=>a.pieces-b.pieces);
+        if(row){
+          const sold=row.qty*p.rate;
+          const ded=calcDeduction(p,pricePts,row.pkts,row.pcs);
+          const line=Math.max(0,sold-ded);
+          h+=`<div class="ptap added">
+            <div class="pt-hdr"><div><div class="pt-nm">${p.name}</div><div class="pt-meta">Rs. ${p.rate}/pkt · ${stk} in stock</div></div><div style="font-size:14px;font-weight:700;color:var(--teal)">${Rs(line)}</div></div>
+            <div style="margin-top:10px"><div class="mini-lbl">Qty Sold (packets)</div><input type="number" class="sold-inp" inputmode="numeric" min="0" max="${stk}" value="${row.qty}" oninput="sUpd(${p.id},'qty',this.value)"/></div>
+            ${ded>0||row.pkts>0||row.pcs>0?`
+            <div class="ret-section">
+              <div class="ret-title">Returns / Damage</div>
+              <div class="ret-row">
+                <div><div class="mini-lbl">Packets returned</div><input type="number" class="mini-inp" inputmode="numeric" min="0" value="${row.pkts||0}" oninput="sUpd(${p.id},'pkts',this.value)"/></div>
+                ${p.has_piece_pricing?`<div><div class="mini-lbl">Loose pieces</div><input type="number" class="mini-inp" inputmode="numeric" min="0" max="${p.pieces_per_packet-1}" value="${row.pcs||0}" oninput="sUpd(${p.id},'pcs',this.value)"/></div>`:''} 
+              </div>
+              ${ded>0?`<div class="deduction-hint">Deduction: ${Rs(ded)} (${row.pkts||0} pkt ${p.has_piece_pricing&&row.pcs?'+ '+row.pcs+' pcs':''})</div>`:''}
+              ${p.has_piece_pricing&&pp.length?`<div style="font-size:10px;color:var(--txs);margin-top:4px">Piece prices: ${pp.map(x=>`${x.pieces}pc=Rs.${x.price}`).join(', ')}</div>`:''}
+            </div>`:`
+            <div style="margin-top:8px"><div class="mini-lbl">Packets returned</div><input type="number" class="mini-inp" inputmode="numeric" min="0" value="${row.pkts||0}" oninput="sUpd(${p.id},'pkts',this.value)"/></div>
+            ${p.has_piece_pricing?`<div style="margin-top:8px"><div class="mini-lbl">Loose pieces returned</div><input type="number" class="mini-inp" inputmode="numeric" min="0" max="${p.pieces_per_packet-1}" value="${row.pcs||0}" oninput="sUpd(${p.id},'pcs',this.value)"/>
+              ${pp.length?`<div style="font-size:10px;color:var(--txs);margin-top:3px">${pp.map(x=>`${x.pieces}pc=Rs.${x.price}`).join(' · ')}</div>`:''}
+            </div>`:''}`}
+            <div class="pt-foot"><span style="font-size:11px;color:var(--txs)">${Rs(sold)}${ded>0?' − '+Rs(ded):''} = ${Rs(line)}</span><button class="btn btn-sm" style="background:var(--red-l);color:var(--red);border-color:transparent" onclick="sRm(${p.id})">Remove</button></div>
+          </div>`;
+        } else {
+          h+=`<div class="ptap" onclick="sAdd(${p.id},${stk})"><div class="pt-hdr"><div><div class="pt-nm">${p.name}</div><div class="pt-meta">Rs. ${p.rate}/pkt · ${stk} in stock${p.has_piece_pricing?' · Piece returns: '+pp.map(x=>x.pieces+'pc=Rs.'+x.price).join(', '):''}</div></div><span style="font-size:28px;color:var(--teal);font-weight:200;line-height:1">＋</span></div></div>`;
+        }
+      });
+    }
+
+    if(st.rows.length>0){
+      h+=`<div class="total-bar"><div class="tb-lbl">Order Total</div><div class="tb-val" id="sgrand">${Rs(grand)}</div></div>`;
+      h+=`<div class="card"><div class="ct">Payment Method</div>
+        <div class="pay-row">
+          <button class="pay-opt${st.pm==='cash'?' sel':''}" onclick="W.sale.pm='cash';render()">💵 Cash</button>
+          <button class="pay-opt${st.pm==='credit'?' sel':''}" onclick="W.sale.pm='credit';render()">📒 Credit</button>
+          <button class="pay-opt${st.pm==='partial'?' sel':''}" onclick="W.sale.pm='partial';render()">⚖ Partial</button>
+        </div>
+        ${st.pm==='partial'?`<div class="fg"><label class="fl">Paid Now (Rs.)</label><input type="number" inputmode="decimal" class="fi" min="0" step="0.01" value="${st.paidNow||''}" placeholder="0.00" oninput="W.sale.paidNow=parseFloat(this.value)||0"/></div>`:''}
+        ${st.pm==='credit'?`<div style="font-size:12px;font-weight:700;color:var(--red)">⚠ ${Rs(grand)} will be added to shop's balance</div>`:''}
+        ${st.pm==='partial'&&st.paidNow?`<div style="font-size:12px;font-weight:700;color:var(--amb)">Cash: ${Rs(st.paidNow)} · Credit: ${Rs(Math.max(0,grand-st.paidNow))}</div>`:''}
+      </div>`;
+      // Order summary
+      h+=`<div class="card"><div class="ct">Order Summary</div>
+        ${st.rows.map(r=>{const p=products.find(x=>x.id==r.pid);if(!p)return'';const sold=r.qty*p.rate;const ded=calcDeduction(p,pricePts,r.pkts,r.pcs);return`<div class="sum-line"><span>${p.name} ×${r.qty}${ded>0?` (−${Rs(ded)} return)`:''}</span><span>${Rs(Math.max(0,sold-ded))}</span></div>`;}).join('')}
+        ${st.rows.some(r=>calcDeduction(products.find(x=>x.id==r.pid)||{},pricePts,r.pkts,r.pcs)>0)?`<div class="sum-line" style="color:var(--red)"><span>Total deductions</span><span>−${Rs(st.rows.reduce((t,r)=>{const p=products.find(x=>x.id==r.pid);return t+calcDeduction(p||{},pricePts,r.pkts,r.pcs);},0))}</span></div>`:''}
+        <div class="sum-line"><span>Total</span><span>${Rs(grand)}</span></div>
+      </div>`;
+      h+=`<button class="btn btn-grn btn-full" onclick="aSubmitSale()">✓ Submit Sale</button>`;
+    }
+  }
+  return h;
+};
+
+function selectShop(id){W.sale.shopId=id;W.sale.shopSearch='';W.sale.rows=[];render();}
+function renderShopList(){
+  // Live filter without full re-render
+  render();
+}
+
+// ── SALESMAN: MY STOCK ────────────────────
+PG['s-stock']=async()=>{
+  const vanId=S.vanId;
+  const [products,loads,orders,rawDets,carries]=await Promise.all([getData('products','?active=eq.true&order=sort_order,name'),getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),getData('order_details'),getData('carryover',`?to_date=eq.${TODAY}&van_id=eq.${vanId}`)]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  let rows='',ok=false;
+  products.forEach(p=>{
+    const l=loads.filter(x=>x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
+    const c=carries.filter(x=>x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
+    if(!l&&!c)return;ok=true;
+    const sold=dets.filter(x=>x.product_id===p.id).reduce((s,x)=>s+(+x.qty_sold||0),0);
+    const tot=l+c,rem=tot-sold,pct=tot>0?rem/tot*100:0;
+    rows+=`<div class="srow"><div class="sr-l"><div class="sr-nm">${p.name}</div><div style="font-size:11px;color:var(--txs);margin-top:1px">Rs. ${p.rate}/pkt</div><div class="pbw" style="max-width:110px"><div class="pb ${pct<20?'crit':pct<40?'low':''}" style="width:${Math.max(0,pct).toFixed(0)}%"></div></div></div>
+      <div class="sr-r"><div class="sr-n"><div class="sr-n-l">Loaded</div><div class="sr-n-v">${tot}</div></div><div class="sr-n"><div class="sr-n-l">Sold</div><div class="sr-n-v cteal">${sold}</div></div><div class="sr-n"><div class="sr-n-l">Left</div><div class="sr-n-v" style="color:${pct<20?'var(--red)':pct<40?'var(--amb)':'var(--tx)'}">${rem}</div></div></div></div>`;
+  });
+  return `<div class="van-hdr"><div class="vh-t">📦 ${S.vanName} — My Stock</div><div class="vh-s">Today: ${bsL(TODAY)} · ${TODAY}</div></div>
+    <div class="card">${ok?rows:'<div class="empty"><div class="ei">📦</div><div class="et">Van not loaded yet</div><div class="es">Contact manager</div></div>'}</div>`;
+};
+
+// ── SALESMAN: SHOP CREDITS ────────────────
+PG['s-credits']=async()=>{
+  const vanId=S.vanId;
+  const [myShops,credits,payments]=await Promise.all([getData('shops',`?van_id=eq.${vanId}&active=eq.true&order=name`),getData('shop_credits'),getData('payments',`?van_id=eq.${vanId}&order=created_at.desc&limit=30`)]);
+  const wb=myShops.map(s=>{const cr=credits.find(c=>c.shop_id===s.id);return{...s,bal:cr?(+cr.balance||0):0};}).sort((a,b)=>b.bal-a.bal);
+  const owed=wb.filter(s=>s.bal>0).reduce((t,s)=>t+s.bal,0);
+  return `<div class="van-hdr"><div class="vh-t">💳 ${S.vanName} — Credits</div><div class="vh-s">Outstanding balances</div>
+    <div class="vh-stats"><div class="vhs"><div class="vhs-v">${wb.filter(s=>s.bal>0).length}</div><div class="vhs-l">Owe</div></div><div class="vhs"><div class="vhs-v">${RsC(owed).replace('Rs. ','')}</div><div class="vhs-l">Total Owed</div></div><div class="vhs"><div class="vhs-v">${wb.filter(s=>s.bal===0).length}</div><div class="vhs-l">Clear</div></div></div>
+  </div>
+  <div class="card"><div class="ct">My Shops</div>
+    ${wb.map(s=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)"><div><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${s.address||''}${s.phone?' · '+s.phone:''}</div></div><div style="text-align:right"><div style="font-size:14px;font-weight:800;color:${s.bal>0?'var(--red)':s.bal<0?'var(--grn)':'var(--txs)'}">${s.bal>0?Rs(s.bal):s.bal<0?'Cr '+Rs(-s.bal):'—'}</div><span class="badge ${s.bal>0?'br':s.bal<0?'bg':'bm'}" style="margin-top:3px">${s.bal>0?'Owes':s.bal<0?'Credit':'Clear'}</span></div></div>`).join('')}
+  </div>`;
+};
+
+// ── SALESMAN: MY SALES ────────────────────
+PG['s-history']=async()=>{
+  const vanId=S.vanId;
+  const [orders,shops]=await Promise.all([getData('orders',`?van_id=eq.${vanId}&order=created_at.desc&limit=100`),getData('shops',`?van_id=eq.${vanId}`)]);
+  const tod=orders.filter(o=>o.date===TODAY);
+  return `<div class="van-hdr"><div class="vh-t">🗂 ${S.vanName} — My Sales</div><div class="vh-s">Order history</div>
+    <div class="vh-stats"><div class="vhs"><div class="vhs-v">${tod.length}</div><div class="vhs-l">Today</div></div><div class="vhs"><div class="vhs-v">${RsC(tod.reduce((s,o)=>s+(+o.total||0),0)).replace('Rs. ','')}</div><div class="vhs-l">Today Rev</div></div><div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">All Orders</div></div></div>
+  </div>
+  <div class="card">
+    ${orders.length?`<div class="tblw"><table class="tbl"><thead><tr><th>BS Date</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
+    <tbody>${orders.map(o=>{const s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>`:'<div class="empty"><div class="et">No orders yet</div></div>'}
+  </div>`;
+};
+
+// ── SALESMAN: CLOSE MY DAY ────────────────
+PG['s-close']=async()=>{
+  const vanId=S.vanId;
+  const [orders,rawDets,loads,carries,settle]=await Promise.all([
+    getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('order_details'),
+    getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('carryover',`?to_date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('settlements',`?date=eq.${TODAY}&van_id=eq.${vanId}`)
+  ]);
+  const st=W.cl||(W.cl={cash:'',note:'',msg:''});
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const totalDam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const expectedCash=totalSold-totalCredit;
+  const existSettle=Array.isArray(settle)?settle[0]:settle;
+
+  if(existSettle?.salesman_declared_cash!=null){
+    const status=existSettle.status;
+    return `<div class="van-hdr"><div class="vh-t">🏁 ${S.vanName} — Day Closed</div><div class="vh-s">${bsL(TODAY)}</div></div>
+    <div class="card">
+      <div class="ct">Day Summary</div>
+      <div class="settle-row"><span>Total Sales</span><span class="fm">${Rs(totalSold)}</span></div>
+      <div class="settle-row"><span>Damage Deducted</span><span class="cred">${Rs(totalDam)}</span></div>
+      <div class="settle-row"><span>Credit Given</span><span class="camb">${Rs(totalCredit)}</span></div>
+      <div class="settle-row"><span>Expected Cash</span><span class="fm cteal">${Rs(expectedCash)}</span></div>
+      <div class="settle-row"><span>You Declared</span><span class="fm">${Rs(existSettle.salesman_declared_cash)}</span></div>
+      <div style="margin-top:12px;padding:12px;background:var(--teal-l);border-radius:10px;text-align:center">
+        <div style="font-size:13px;color:var(--teal);font-weight:700">✓ Day Closed — Waiting for owner to confirm</div>
+      </div>
+    </div>`;
+  }
+
+  return `
+  ${st.msg?`<div class="al al-e">${st.msg}</div>`:''}
+  <div class="van-hdr"><div class="vh-t">🏁 Close My Day</div><div class="vh-s">${S.driver} · ${bsL(TODAY)}</div>
+    <div class="vh-stats"><div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div><div class="vhs"><div class="vhs-v">${RsC(totalSold).replace('Rs. ','')}</div><div class="vhs-l">Sales</div></div><div class="vhs"><div class="vhs-v">${RsC(totalDam).replace('Rs. ','')}</div><div class="vhs-l">Damage</div></div></div>
+  </div>
+  <div class="card"><div class="ct">Day Summary</div>
+    <div class="settle-row"><span>Total Sales (${orders.length} orders)</span><span class="fm">${Rs(totalSold)}</span></div>
+    <div class="settle-row"><span>Damage / Returns Deducted</span><span class="cred">− ${Rs(totalDam)}</span></div>
+    <div class="settle-row"><span>Credit Given to Shops</span><span class="camb">− ${Rs(totalCredit)}</span></div>
+    <div class="settle-row"><span>Cash to Hand Over</span><span class="fm cteal" style="font-size:16px">${Rs(expectedCash)}</span></div>
+  </div>
+  <div class="card"><div class="ct">Declare Your Cash</div>
+    <p style="font-size:13px;color:var(--txs);margin-bottom:12px">Count the cash you are carrying. Enter the amount below before returning to factory.</p>
+    <div class="fg"><label class="fl">Cash in Hand (Rs.)</label><input type="number" inputmode="decimal" class="fi" min="0" step="0.01" value="${st.cash||''}" placeholder="${expectedCash.toFixed(2)}" oninput="W.cl.cash=this.value" style="font-size:20px;font-weight:700;text-align:center"/></div>
+    ${st.cash&&Math.abs(parseFloat(st.cash||0)-expectedCash)>0?`<div style="font-size:13px;font-weight:700;padding:8px 12px;border-radius:8px;background:${parseFloat(st.cash||0)<expectedCash?'var(--red-l)':'var(--teal-l)'};color:${parseFloat(st.cash||0)<expectedCash?'var(--red)':'var(--teal)'}">
+      ${parseFloat(st.cash||0)<expectedCash?'⚠ You are Rs. '+Rs(expectedCash-parseFloat(st.cash||0))+' SHORT':'You have Rs. '+Rs(parseFloat(st.cash||0)-expectedCash)+' extra'}
+    </div>`:''}
+    <button class="btn btn-amb btn-full" style="margin-top:12px" onclick="aCloseDay(${expectedCash.toFixed(2)})">🏁 Close My Day & Submit to Owner</button>
+  </div>`;
+};
+
+// ── SALESMAN: MORE ────────────────────────
+PG['s-more']=()=>Promise.resolve(`
+  <div class="card" style="text-align:center;padding:20px 16px 14px">
+    <div style="font-size:46px;margin-bottom:10px">🥐</div>
+    <div style="font-size:18px;font-weight:800">BakeryTrack</div>
+    <div style="font-size:12px;color:var(--txs);margin-top:3px">Salesman Edition</div>
+    <div style="margin-top:12px;display:inline-block;padding:10px 18px;background:var(--red-l);border-radius:12px">
+      <div style="font-size:14px;font-weight:700;color:var(--red)">${S.vanName}</div>
+      <div style="font-size:12px;color:var(--txs);margin-top:2px">${S.driver}</div>
+    </div>
+  </div>
+  <div class="mgrid" style="margin-bottom:12px">
+    <button class="mc-btn" onclick="goTo('s-sale')"><span class="mc-ic">🛒</span><span class="mc-t">New Sale</span><span class="mc-s">Record a sale</span></button>
+    <button class="mc-btn" onclick="goTo('s-stock')"><span class="mc-ic">📦</span><span class="mc-t">My Stock</span><span class="mc-s">Van inventory</span></button>
+    <button class="mc-btn" onclick="goTo('s-credits')"><span class="mc-ic">💳</span><span class="mc-t">Credits</span><span class="mc-s">Shop balances</span></button>
+    <button class="mc-btn" onclick="goTo('s-close')"><span class="mc-ic">🏁</span><span class="mc-t">Close My Day</span><span class="mc-s">Hand over cash</span></button>
+  </div>
+  <button class="btn btn-full" style="border-color:var(--red);color:var(--red)" onclick="logout()">🚪 Sign Out</button>`);
+
+// ════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════
+// Sale rows
+function sAdd(pid,stk){const s=W.sale;if(!s.rows.find(r=>r.pid==pid))s.rows.push({pid,qty:Math.min(1,stk),pkts:0,pcs:0});render();}
+function sRm(pid){W.sale.rows=W.sale.rows.filter(r=>r.pid!=pid);render();}
+function sUpd(pid,f,v){const row=W.sale?.rows?.find(r=>r.pid==pid);if(row)row[f]=parseInt(v)||0;render();}
+
+async function aSubmitSale(){
+  const st=W.sale,vanId=S.vanId;
+  if(!st.shopId){st.msg='Please select a shop.';render();return;}
+  const valid=st.rows.filter(r=>r.qty>0);
+  if(!valid.length){st.msg='Add at least one product.';render();return;}
+  const products=cg('products?active=eq.true&order=sort_order,name')||cg('products')||[];
+  const pricePts=cg('piece_prices?order=product_id,pieces')||cg('piece_prices')||[];
+  const loads=cg(`van_loads?date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
+  const orders=cg(`orders?date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
+  const allDets=cg('order_details')||[];
+  const carries=cg(`carryover?to_date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
+  const oids=orders.map(o=>o.id);const dets=allDets.filter(d=>oids.includes(d.order_id));
+  // Stock check
+  for(const r of valid){
+    const l=loads.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty||0),0);
+    const c=carries.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty||0),0);
+    const s=dets.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty_sold||0),0);
+    const stk=l+c-s;
+    if(r.qty>stk){const p=products.find(x=>x.id==r.pid);st.msg=`Not enough stock: ${p?p.name:'?'} (${stk} left)`;render();return;}
+  }
+  let total=0;
+  const details=valid.map(r=>{
+    const p=products.find(x=>x.id==r.pid);const rate=p?p.rate:0;
+    const ded=calcDeduction(p||{rate:0,has_piece_pricing:false,pieces_per_packet:1},pricePts,r.pkts,r.pcs);
+    const line=Math.max(0,r.qty*rate-ded);total+=line;
+    return{product_id:r.pid,qty_sold:r.qty,packets_returned:r.pkts||0,pieces_returned:r.pcs||0,damage_deduction:parseFloat(ded.toFixed(2)),rate,line_total:parseFloat(line.toFixed(2))};
+  });
+  const creditAmt=st.pm==='cash'?0:st.pm==='credit'?total:Math.max(0,total-(st.paidNow||0));
+  const paidAmt=st.pm==='cash'?total:st.pm==='credit'?0:(st.paidNow||0);
+  try{
+    const res=await sbP('orders',[{date:st.date,van_id:vanId,shop_id:parseInt(st.shopId),total:parseFloat(total.toFixed(2)),payment_method:st.pm||'cash',paid_amount:parseFloat(paidAmt.toFixed(2)),credit_amount:parseFloat(creditAmt.toFixed(2))}]);
+    const oid=res[0]?.id;
+    if(oid)await sbP('order_details',details.map(d=>({...d,order_id:oid})));
+  }catch(e){
+    qAdd({type:'ins',table:'orders',data:{date:st.date,van_id:vanId,shop_id:parseInt(st.shopId),total:parseFloat(total.toFixed(2)),payment_method:st.pm||'cash',paid_amount:parseFloat(paidAmt.toFixed(2)),credit_amount:parseFloat(creditAmt.toFixed(2))}});
+    updSync();
+  }
+  // Update shop credit
+  if(creditAmt>0){
+    try{
+      const ex=await sbG('shop_credits',`?shop_id=eq.${st.shopId}`);
+      const bal=ex.length?(+ex[0].balance||0):0;
+      const nb=parseFloat((bal+creditAmt).toFixed(2));
+      if(ex.length)await sbU('shop_credits',`?shop_id=eq.${st.shopId}`,{balance:nb,updated_at:new Date().toISOString()});
+      else await sbP('shop_credits',[{shop_id:parseInt(st.shopId),balance:nb}]);
+    }catch(e){qAdd({type:'ins',table:'shop_credits',data:{shop_id:parseInt(st.shopId),balance:parseFloat(creditAmt.toFixed(2))}});}
+  }
+  W.sale={shopId:'',shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:st.date,rows:[],pm:'cash',paidNow:0,msg:`✓ Sale recorded! Total: ${Rs(total)}${creditAmt>0?' · Credit: '+Rs(creditAmt):''}`};
+  render();
+}
+
+async function aCloseDay(expectedCash){
+  const st=W.cl;
+  if(!st.cash){st.msg='Enter your cash amount.';render();return;}
+  const declared=parseFloat(st.cash);
+  const vanId=S.vanId;
+  const orders=await getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+  const rawDets=await getData('order_details');
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const totalDam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const settleData={date:TODAY,van_id:vanId,total_sold:parseFloat(totalSold.toFixed(2)),total_damage:parseFloat(totalDam.toFixed(2)),total_credit_given:parseFloat(totalCredit.toFixed(2)),expected_cash:parseFloat(expectedCash),salesman_declared_cash:declared,status:'salesman_submitted',salesman_submitted_at:new Date().toISOString()};
+  try{
+    const ex=await sbG('settlements',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+    if(ex.length)await sbU('settlements',`?id=eq.${ex[0].id}`,settleData);
+    else await sbP('settlements',[settleData]);
+  }catch(e){qAdd({type:'ins',table:'settlements',data:settleData});}
+  W.cl={cash:'',note:'',msg:''};render();
+}
+
+async function aConfirmSettle(vanId,settleId,expectedCash){
+  const cashEl=document.getElementById('cash-'+vanId);
+  const actual=parseFloat(cashEl?.value||0);
+  if(!actual){alert('Enter actual cash received.');return;}
+  const diff=parseFloat((actual-expectedCash).toFixed(2));
+  const status=diff<-0.5?'shortfall':'confirmed';
+  await sbU('settlements',`?id=eq.${settleId}`,{actual_cash_received:actual,difference:diff,status,owner_confirmed_at:new Date().toISOString()});
+  W.se.msg=`✓ ${(cg('vans')||[]).find(v=>v.id==vanId)?.name||'Van'} settled. ${diff<0?'⚠ Short by '+Rs(Math.abs(diff)):'✓ Matched!'}`;render();
+}
+
+async function aSaveNewShop(vanId){
+  const st=W.sale,n=st.ns;
+  if(!n.name?.trim()){alert('Shop name is required.');return;}
+  try{
+    const res=await sbP('shops',[{name:n.name.trim(),address:n.address||null,phone:n.phone||null,contact_name:n.contact||null,van_id:vanId,added_by:'salesman',active:true}]);
+    const ns=res[0];
+    if(ns?.id){
+      await sbP('shop_credits',[{shop_id:ns.id,balance:0}]);
+      cs('shops?van_id=eq.'+vanId+'&active=eq.true&order=name',await sbG('shops',`?van_id=eq.${vanId}&active=eq.true&order=name`));
+      W.sale.addingShop=false;W.sale.shopId=ns.id;W.sale.rows=[];W.sale.msg=`Shop "${n.name}" added!`;
+    }
+  }catch(e){qAdd({type:'ins',table:'shops',data:{name:n.name.trim(),address:n.address||null,phone:n.phone||null,contact_name:n.contact||null,van_id:vanId,added_by:'salesman',active:true}});W.sale.addingShop=false;W.sale.msg='Shop saved (will sync when online).';}
+  render();
+}
+
+function buildPpRows(){const st=W.prd;if(!st.ppRows)st.ppRows=[];while(st.ppRows.length<st.piecesPerPkt)st.ppRows.push(0);st.ppRows=st.ppRows.slice(0,st.piecesPerPkt);}
+
+async function aSavePrd(){
+  const st=W.prd;if(!st.name||!st.rate){st.msg='Name and rate required.';render();return;}
+  const data={name:st.name,rate:parseFloat(st.rate),cost:0,has_piece_pricing:st.hasPiece,pieces_per_packet:st.hasPiece?parseInt(st.piecesPerPkt):1,active:true};
+  let pid=st.edit;
+  if(st.edit){await sbU('products',`?id=eq.${st.edit}`,data);}
+  else{const res=await sbP('products',[data]);pid=res[0]?.id;}
+  if(pid&&st.hasPiece&&st.ppRows.length){
+    await sbD('piece_prices',`?product_id=eq.${pid}`);
+    const pp=st.ppRows.map((price,i)=>({product_id:pid,pieces:i+1,price:parseFloat(price)||0})).filter(x=>x.price>0);
+    if(pp.length)await sbP('piece_prices',pp);
+  }
+  W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:st.edit?'✓ Product updated.':'✓ Product added.'};render();
+}
+async function aEditPrd(id){
+  const [p,pp]=await Promise.all([sbG('products',`?id=eq.${id}`),sbG('piece_prices',`?product_id=eq.${id}&order=pieces`)]);
+  const prod=p[0];if(!prod)return;
+  W.prd={name:prod.name,rate:prod.rate,hasPiece:prod.has_piece_pricing,piecesPerPkt:prod.pieces_per_packet||1,ppRows:pp.map(x=>x.price),edit:id,msg:''};render();
+}
+
+async function aSaveVan(){
+  const st=W.van;if(!st.name||!st.driver||!st.pin){st.msg='All fields required.';render();return;}
+  if(st.edit)await sbU('vans',`?id=eq.${st.edit}`,{name:st.name,driver:st.driver,pin:st.pin});
+  else await sbP('vans',[{name:st.name,driver:st.driver,pin:st.pin,active:true}]);
+  const vans=await sbG('vans');cs('vans',vans);
+  W.van={name:'',driver:'',pin:'',edit:null,msg:st.edit?'✓ Van updated.':'✓ Van added.'};render();
+}
+async function aEditVan(id){const v=(await sbG('vans',`?id=eq.${id}`))[0];if(v){W.van={name:v.name,driver:v.driver,pin:v.pin||'',edit:id,msg:''};render();}}
+
+async function aSaveArea(){
+  const st=W.ar;if(!st.name||!st.vanId){st.msg='Name and van required.';render();return;}
+  if(st.edit)await sbU('areas',`?id=eq.${st.edit}`,{name:st.name,van_id:parseInt(st.vanId)});
+  else await sbP('areas',[{name:st.name,van_id:parseInt(st.vanId)}]);
+  W.ar={name:'',vanId:'',edit:null,msg:st.edit?'✓ Area updated.':'✓ Area added.'};render();
+}
+async function aEditArea(id){const a=(await sbG('areas',`?id=eq.${id}`))[0];if(a){W.ar={name:a.name,vanId:a.van_id,edit:id,msg:''};render();}}
+
+async function aSaveShop(){
+  const st=W.shp;if(!st.name||!st.vanId){st.msg='Name and van required.';render();return;}
+  const data={name:st.name,address:st.address||null,phone:st.phone||null,contact_name:st.contact||null,van_id:parseInt(st.vanId),area_id:st.areaId?parseInt(st.areaId):null};
+  if(st.edit){await sbU('shops',`?id=eq.${st.edit}`,data);}
+  else{const res=await sbP('shops',[{...data,active:true}]);const ns=res[0];if(ns?.id){const ib=parseFloat(st.openBal)||0;await sbP('shop_credits',[{shop_id:ns.id,balance:ib}]);}}
+  W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:st.edit?'✓ Shop updated.':'✓ Shop added.'};render();
+}
+async function aEditShop(id){const s=(await sbG('shops',`?id=eq.${id}`))[0];if(s){W.shp={name:s.name,address:s.address||'',phone:s.phone||'',contact:s.contact_name||'',vanId:s.van_id,areaId:s.area_id||'',openBal:'',edit:id,msg:''};render();}}
+
+async function aProd(){const st=W.pr;if(!st.pid||!st.qty){st.msg='Select product and enter qty.';render();return;}await write('production',{date:st.date,product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.pr={date:st.date,pid:'',qty:'',msg:'✓ Production logged.'};render();}
+async function aLoad(){const st=W.vl;if(!st.vanId||!st.pid||!st.qty){st.msg='Fill all fields.';render();return;}await write('van_loads',{date:st.date,van_id:parseInt(st.vanId),product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.vl={date:st.date,vanId:st.vanId,pid:'',qty:'',msg:'✓ Van loaded.'};render();}
+async function aCarry(meta){const st=W.co;const prev=new Date(st.date);prev.setDate(prev.getDate()-1);const ps=prev.toISOString().split('T')[0];for(const m of meta){const qty=parseInt(document.getElementById('co-'+m.idx)?.value||0);if(!qty)continue;if(m.exId)await sbU('carryover',`?id=eq.${m.exId}`,{qty});else await sbP('carryover',[{from_date:ps,to_date:st.date,van_id:parseInt(st.vanId),product_id:m.pid,qty}]);}W.co.msg='✓ Carryover saved.';render();}
+async function aPayment(){const st=W.cr;if(!st.sid||!st.amt){st.msg='Select shop and enter amount.';render();return;}await write('payments',{date:TODAY,shop_id:parseInt(st.sid),amount:parseFloat(st.amt),note:st.note||null,recorded_by:'owner'});try{const ex=await sbG('shop_credits',`?shop_id=eq.${st.sid}`);const bal=ex.length?(+ex[0].balance||0):0;const nb=parseFloat((bal-parseFloat(st.amt)).toFixed(2));if(ex.length)await sbU('shop_credits',`?shop_id=eq.${st.sid}`,{balance:nb,updated_at:new Date().toISOString()});else await sbP('shop_credits',[{shop_id:parseInt(st.sid),balance:nb}]);}catch(e){}W.cr={sid:'',amt:'',note:'',msg:'✓ Payment recorded.'};render();}
+async function delIt(table,query){if(!confirm('Delete this?'))return;await sbD(table,query);render();}
+
+// ── Export ────────────────────────────────
+async function exportCSV(date){
+  const [products,vans,shops,orders,rawDets]=await Promise.all([getData('products'),getData('vans'),getData('shops'),getData('orders',`?date=eq.${date}`),getData('order_details')]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  let csv='BS Date,AD Date,Van,Driver,Shop,Product,Qty Sold,Pkts Returned,Pcs Returned,Damage(Rs.),Rate,Line Total,Payment\n';
+  orders.forEach(o=>{const v=vans.find(x=>x.id==o.van_id),sh=shops.find(x=>x.id==o.shop_id);dets.filter(d=>d.order_id==o.id).forEach(d=>{const p=products.find(x=>x.id==d.product_id);csv+=`"${bsS(date)}","${date}","${v?.name||''}","${v?.driver||''}","${sh?.name||''}","${p?.name||''}",${d.qty_sold},${d.packets_returned||0},${d.pieces_returned||0},${(+d.damage_deduction||0).toFixed(2)},${(+d.rate).toFixed(2)},${(+d.line_total).toFixed(2)},"${o.payment_method}"\n`;});});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`bakerytrack_${date}.csv`;a.click();
+}
+async function printRpt(date){
+  const [products,vans,shops,orders,rawDets,settlements]=await Promise.all([getData('products'),getData('vans'),getData('shops'),getData('orders',`?date=eq.${date}`),getData('order_details'),getData('settlements',`?date=eq.${date}`)]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  let html=`<!DOCTYPE html><html><head><title>BakeryTrack ${bsL(date)}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#111}h1{font-size:16px;font-weight:800}h2{font-size:13px;margin:14px 0 5px;font-weight:700}.meta{color:#666;font-size:11px;margin:3px 0 10px}.sum{display:flex;gap:20px;padding:10px 14px;background:#f5f4f0;border-radius:5px;margin-bottom:12px}.si .sl{font-size:10px;color:#888;text-transform:uppercase;font-weight:700}.si .sv{font-size:16px;font-weight:800;margin-top:1px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:4px 7px;text-align:left}th{background:#f5f5f5;font-weight:700;font-size:10px;text-transform:uppercase}.tr{text-align:right}.bold{font-weight:700;background:#f9f9f9}</style></head><body>
+  <h1>🥐 BakeryTrack Nepal — Daily Report</h1><div class="meta">BS: ${bsL(date)} · AD: ${date} · Printed: ${new Date().toLocaleString()}</div>
+  <div class="sum"><div class="si"><div class="sl">Revenue</div><div class="sv">Rs.${rev.toFixed(2)}</div></div><div class="si"><div class="sl">Damage</div><div class="sv">Rs.${dam.toFixed(2)}</div></div><div class="si"><div class="sl">Orders</div><div class="sv">${orders.length}</div></div></div>
+  <h2>Sales by Van</h2><table><tr><th>Van</th><th>Driver</th><th>Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th>Settlement</th></tr>
+  ${vans.map(v=>{const vO=orders.filter(o=>o.van_id===v.id);const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));const r=vO.reduce((s,o)=>s+(+o.total||0),0);const dm=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);const s=settlements.find(x=>x.van_id===v.id);return`<tr><td>${v.name}</td><td>${v.driver}</td><td>${vO.length}</td><td class="tr">Rs.${r.toFixed(2)}</td><td class="tr">Rs.${dm.toFixed(2)}</td><td>${s?.status||'pending'}</td></tr>`;}).join('')}</table>
+  <h2>Order Details</h2><table><tr><th>Van</th><th>Shop</th><th>Product</th><th class="tr">Sold</th><th class="tr">Ret.Pkt</th><th class="tr">Ret.Pcs</th><th class="tr">Deduction</th><th class="tr">Total</th><th>Pay</th></tr>
+  ${orders.map(o=>{const v=vans.find(x=>x.id==o.van_id),sh=shops.find(x=>x.id==o.shop_id);const rows=dets.filter(d=>d.order_id==o.id).map(d=>{const p=products.find(x=>x.id==d.product_id);return`<tr><td>${v?.name||''}</td><td>${sh?.name||''}</td><td>${p?.name||''}</td><td class="tr">${d.qty_sold}</td><td class="tr">${d.packets_returned||0}</td><td class="tr">${d.pieces_returned||0}</td><td class="tr">Rs.${(+d.damage_deduction||0).toFixed(2)}</td><td class="tr">Rs.${(+d.line_total).toFixed(2)}</td><td>${o.payment_method}</td></tr>`;}).join('');return rows+`<tr class="bold"><td colspan="8">Order #${o.id} — ${sh?.name||''}</td><td class="tr">Rs.${(+o.total).toFixed(2)}</td></tr>`;}).join('')}</table>
+  </body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();w.print();
+}
+
+function bootApp(){
+  const bs=adToBS(TODAY);
+  document.getElementById('hbs').textContent=`${bs.y} ${BSM[bs.m-1]} ${bs.d}`;
+  document.getElementById('had').textContent=TODAY;
+  document.getElementById('topbar').className='topbar '+(S.role==='owner'?'to':'ts');
+  document.getElementById('tb-s').textContent=S.role==='owner'?'Owner Dashboard':`${S.vanName} · ${S.driver}`;
+  updSync();
+  if(S.role==='owner')goTo('o-dash');else goTo('s-sale');
+  processQ();
+}
+
+async function init(){
+  try{const vans=await sbG('vans','?active=eq.true&order=name');cs('vans',vans);await refreshCache();}
+  catch(e){console.warn('Init failed, using cache');}
+  document.getElementById('ld').classList.add('out');
+  setTimeout(()=>{
+    document.getElementById('ld').style.display='none';
+    document.getElementById('login').style.display='flex';
+    if(!isOnline){const b=document.querySelector('.lbox');if(b)b.insertAdjacentHTML('afterbegin','<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:#b45309;margin-bottom:14px">📵 Offline — using cached data</div>');}
+  },380);
+}
+init();
+</script>
+</body>
+</html>
