@@ -643,41 +643,106 @@ PG['o-settle']=async()=>{
 // ── OWNER: DAILY REPORT ───────────────────
 PG['o-rpt']=async()=>{
   const date=W.rd||TODAY;W.rd=date;
-  const [products,vans,orders,rawDets,production,loads]=await Promise.all([getData('products'),getData('vans'),getData('orders',`?date=eq.${date}`),getData('order_details'),getData('production',`?date=eq.${date}`),getData('van_loads',`?date=eq.${date}`)]);
-  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  // Fetch orders for this date first, then fetch their details specifically
+  const [products,vans,orders,production,loads]=await Promise.all([
+    getData('products'),
+    getData('vans'),
+    sbG('orders',`?date=eq.${date}&order=created_at.desc`),
+    getData('production',`?date=eq.${date}`),
+    getData('van_loads',`?date=eq.${date}`)
+  ]);
+  // Fetch details only for these orders
+  let dets=[];
+  if(orders.length>0){
+    const oids=orders.map(o=>o.id).join(',');
+    try{dets=await sbG('order_details',`?order_id=in.(${oids})`);}
+    catch(e){dets=[];}
+  }
   const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
   const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
   const loaded=loads.reduce((s,l)=>s+(+l.qty||0),0);
   const soldQ=dets.reduce((s,d)=>s+(+d.qty_sold||0),0);
-  const retQ=dets.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+  const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const totalCash=rev-totalCredit;
+  const tmrwDate=tmrw();
   return `
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-    <div class="fg" style="flex:1;min-width:160px;margin:0"><input type="date" class="fi" value="${date}" onchange="W.rd=this.value;render()"/><div class="dh">BS: ${bsL(date)}</div></div>
-    <div style="display:flex;gap:7px;flex-shrink:0"><button class="btn btn-sm" onclick="exportCSV('${date}')">⬇ CSV</button><button class="btn btn-sm" onclick="printRpt('${date}')">🖨 Print</button></div>
+    <div style="flex:1;min-width:160px">
+      <input type="date" class="fi" value="${date}" onchange="W.rd=this.value;render()"/>
+      <div class="dh">BS: ${bsL(date)}</div>
+    </div>
+    <div style="display:flex;gap:7px;flex-shrink:0">
+      <button class="btn btn-sm" onclick="W.rd='${TODAY}';render()">Today</button>
+      <button class="btn btn-sm" onclick="W.rd='${tmrwDate}';render()">Tomorrow</button>
+      <button class="btn btn-sm" onclick="exportCSV('${date}')">⬇ CSV</button>
+      <button class="btn btn-sm" onclick="printRpt('${date}')">🖨 Print</button>
+    </div>
   </div>
+  ${orders.length===0?`<div class="al al-w">
+    No orders found for ${bsL(date)} (${date}).
+    ${date===TODAY?'Salesmen record sales on their phones. The sale date may be set to tomorrow (van loading date).':''}
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="W.rd='${tmrwDate}';render()">Check Tomorrow</button>
+      ${date!==TODAY?`<button class="btn btn-sm" onclick="W.rd='${TODAY}';render()">Check Today</button>`:''}
+    </div>
+  </div>`:''}
   <div class="mg mg4">
     <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(rev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">Cash Expected</div><div class="mv cgrn">${RsC(totalCash)}</div><div class="ms">after credit</div></div>
     <div class="mc"><div class="ml">Damage Deducted</div><div class="mv cred">${RsC(dam)}</div></div>
-    <div class="mc"><div class="ml">Units Sold</div><div class="mv">${soldQ}</div></div>
-    <div class="mc"><div class="ml">Units Remaining</div><div class="mv">${loaded-soldQ}</div></div>
+    <div class="mc"><div class="ml">On Credit</div><div class="mv camb">${RsC(totalCredit)}</div></div>
   </div>
+  ${orders.length>0?`
   <div class="card"><div class="ct">Sales by Van</div>
-    <div class="tblw"><table class="tbl"><thead><tr><th>Van</th><th>Driver</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th></tr></thead>
-    <tbody>${vans.map(v=>{const vO=orders.filter(o=>o.van_id===v.id);const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));const r=vO.reduce((s,o)=>s+(+o.total||0),0);const dm=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);const cr=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);return`<tr><td class="fm">${v.name}</td><td>${v.driver}</td><td class="tr">${vO.length}</td><td class="tr fm">${RsC(r)}</td><td class="tr cred">${RsC(dm)}</td><td class="tr camb">${RsC(cr)}</td></tr>`;}).join('')}</tbody>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Van</th><th>Driver</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th></tr></thead>
+      <tbody>${vans.map(v=>{
+        const vO=orders.filter(o=>o.van_id===v.id);
+        const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));
+        const r=vO.reduce((s,o)=>s+(+o.total||0),0);
+        const dm=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+        const cr=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
+        return vO.length>0?`<tr><td class="fm">${v.name}</td><td style="font-size:12px">${v.driver}</td><td class="tr">${vO.length}</td><td class="tr fm">${RsC(r)}</td><td class="tr cred">${RsC(dm)}</td><td class="tr camb">${RsC(cr)}</td></tr>`:'';
+      }).join('')}</tbody>
     </table></div>
   </div>
   <div class="card"><div class="ct">Sales by Product</div>
-    <div class="tblw"><table class="tbl"><thead><tr><th>Product</th><th class="tr">Sold</th><th class="tr">Ret.Packets</th><th class="tr">Ret.Pieces</th><th class="tr">Deduction</th><th class="tr">Revenue</th></tr></thead>
-    <tbody>${products.map(p=>{const pd=dets.filter(d=>d.product_id==p.id);const s=pd.reduce((x,d)=>x+(+d.qty_sold||0),0);if(!s)return'';const rp=pd.reduce((x,d)=>x+(+d.packets_returned||0),0);const rc=pd.reduce((x,d)=>x+(+d.pieces_returned||0),0);const dm=pd.reduce((x,d)=>x+(+d.damage_deduction||0),0);const lt=pd.reduce((x,d)=>x+(+d.line_total||0),0);return`<tr><td>${p.name}</td><td class="tr">${s}</td><td class="tr">${rp}</td><td class="tr">${rc}</td><td class="tr cred">${RsC(dm)}</td><td class="tr fm">${RsC(lt)}</td></tr>`;}).join('')}</tbody>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Product</th><th class="tr">Sold</th><th class="tr">Ret.Pkts</th><th class="tr">Ret.Pcs</th><th class="tr">Deduction</th><th class="tr">Revenue</th></tr></thead>
+      <tbody>${products.map(p=>{
+        const pd=dets.filter(d=>d.product_id==p.id);
+        const s=pd.reduce((x,d)=>x+(+d.qty_sold||0),0);
+        if(!s)return'';
+        const rp=pd.reduce((x,d)=>x+(+d.packets_returned||0),0);
+        const rc=pd.reduce((x,d)=>x+(+d.pieces_returned||0),0);
+        const dm=pd.reduce((x,d)=>x+(+d.damage_deduction||0),0);
+        const lt=pd.reduce((x,d)=>x+(+d.line_total||0),0);
+        return`<tr><td>${p.name}</td><td class="tr">${s}</td><td class="tr">${rp}</td><td class="tr">${rc}</td><td class="tr cred">${RsC(dm)}</td><td class="tr fm">${RsC(lt)}</td></tr>`;
+      }).join('')}</tbody>
     </table></div>
-  </div>`;
+  </div>
+  <div class="card"><div class="ct">Order Details</div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Shop</th><th>Van</th><th class="tr">Total</th><th class="tr">Damage</th><th class="tr">Credit</th><th>Pay</th></tr></thead>
+      <tbody>${orders.map(o=>{
+        const v=vans.find(x=>x.id==o.van_id);
+        const oDets=dets.filter(d=>d.order_id==o.id);
+        const oDam=oDets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+        return`<tr><td style="font-size:12px">Order #${o.id}</td><td style="font-size:11px">${v?v.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td class="tr cred">${oDam>0?RsC(oDam):'—'}</td><td class="tr camb">${+o.credit_amount>0?RsC(+o.credit_amount):'—'}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>`:''}`;
 };
 
 // ── OWNER: PROFIT ─────────────────────────
 PG['o-profit']=async()=>{
   const date=W.pd||TODAY;W.pd=date;
-  const [products,vans,orders,rawDets]=await Promise.all([getData('products'),getData('vans'),getData('orders',`?date=eq.${date}`),getData('order_details')]);
-  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const [products,vans,orders]=await Promise.all([getData('products'),getData('vans'),sbG('orders',`?date=eq.${date}`)]);
+  let dets=[];
+  if(orders.length>0){
+    const oids=orders.map(o=>o.id).join(',');
+    try{dets=await sbG('order_details',`?order_id=in.(${oids})`);}catch(e){dets=[];}
+  }
   const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
   const cost=dets.reduce((s,d)=>{const p=products.find(x=>x.id==d.product_id);return s+(p?.cost?d.qty_sold*p.cost:0);},0);
   const gross=rev-cost;const margin=rev>0?(gross/rev*100).toFixed(1):0;
@@ -864,11 +929,22 @@ PG['o-credits']=async()=>{
 
 // ── OWNER: SALES HISTORY ─────────────────
 PG['o-history']=async()=>{
-  const [orders,vans,shops]=await Promise.all([getData('orders','?order=created_at.desc&limit=200'),getData('vans'),getData('shops')]);
-  return `<div class="card"><div class="chdr"><div class="ct">All Sales Orders</div><span class="badge bt">${orders.length}</span></div>
-    ${orders.length?`<div class="tblw"><table class="tbl"><thead><tr><th>BS Date</th><th>AD</th><th>Van</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
-    <tbody>${orders.map(o=>{const v=vans.find(x=>x.id==o.van_id),s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:11px">${o.date}</td><td style="font-size:12px">${v?v.name:'?'}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
-    </table></div>`:'<div class="empty"><div class="ei">🗂</div><div class="et">No orders yet</div></div>'}
+  const filterDate=W.hd||'';W.hd=filterDate;
+  const query=filterDate?`?date=eq.${filterDate}&order=created_at.desc`:'?order=created_at.desc&limit=300';
+  const [orders,vans,shops]=await Promise.all([sbG('orders',query),getData('vans'),getData('shops')]);
+  const tmrwDate=tmrw();
+  return `<div class="card">
+    <div class="chdr"><div class="ct">Sales History</div><span class="badge bt">${orders.length}</span></div>
+    <div style="display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px"><input type="date" class="fi" value="${filterDate}" placeholder="Filter by date" onchange="W.hd=this.value;render()"/></div>
+      <button class="btn btn-sm" onclick="W.hd='${TODAY}';render()">Today</button>
+      <button class="btn btn-sm" onclick="W.hd='${tmrwDate}';render()">Tomorrow</button>
+      <button class="btn btn-sm btn-ghost" onclick="W.hd='';render()">All</button>
+    </div>
+    ${orders.length?`<div class="tblw"><table class="tbl">
+      <thead><tr><th>BS Date</th><th>AD Date</th><th>Van</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
+      <tbody>${orders.map(o=>{const v=vans.find(x=>x.id==o.van_id),s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:11px">${o.date}</td><td style="font-size:12px">${v?v.name:'?'}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>`:'<div class="empty"><div class="ei">🗂</div><div class="et">No orders found</div><div class="es">Try a different date or tap All</div></div>'}
   </div>`;
 };
 
@@ -1280,27 +1356,43 @@ PG['s-credits']=async()=>{
 // ── SALESMAN: MY SALES ────────────────────
 PG['s-history']=async()=>{
   const vanId=S.vanId;
-  const [orders,shops]=await Promise.all([getData('orders',`?van_id=eq.${vanId}&order=created_at.desc&limit=100`),getData('shops',`?van_id=eq.${vanId}`)]);
-  const tod=orders.filter(o=>o.date===TODAY);
+  const [orders,shops]=await Promise.all([
+    sbG('orders',`?van_id=eq.${vanId}&order=created_at.desc&limit=100`),
+    getData('shops',`?van_id=eq.${vanId}`)
+  ]);
+  const tmrwDate=tmrw();
+  const tod=orders.filter(o=>o.date===TODAY||o.date===tmrwDate);
+  const todRev=tod.reduce((s,o)=>s+(+o.total||0),0);
   return `<div class="van-hdr"><div class="vh-t">🗂 ${S.vanName} — My Sales</div><div class="vh-s">Order history</div>
-    <div class="vh-stats"><div class="vhs"><div class="vhs-v">${tod.length}</div><div class="vhs-l">Today</div></div><div class="vhs"><div class="vhs-v">${RsC(tod.reduce((s,o)=>s+(+o.total||0),0)).replace('Rs. ','')}</div><div class="vhs-l">Today Rev</div></div><div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">All Orders</div></div></div>
+    <div class="vh-stats">
+      <div class="vhs"><div class="vhs-v">${tod.length}</div><div class="vhs-l">Recent</div></div>
+      <div class="vhs"><div class="vhs-v">${RsC(todRev).replace('Rs. ','')}</div><div class="vhs-l">Revenue</div></div>
+      <div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">All Orders</div></div>
+    </div>
   </div>
   <div class="card">
-    ${orders.length?`<div class="tblw"><table class="tbl"><thead><tr><th>BS Date</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
-    <tbody>${orders.map(o=>{const s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
-    </table></div>`:'<div class="empty"><div class="et">No orders yet</div></div>'}
+    ${orders.length?`<div class="tblw"><table class="tbl">
+      <thead><tr><th>BS Date</th><th>AD Date</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
+      <tbody>${orders.map(o=>{const s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:11px">${o.date}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>`:'<div class="empty"><div class="et">No orders yet</div><div class="es">Submit a sale to see it here</div></div>'}
   </div>`;
 };
 
 // ── SALESMAN: CLOSE MY DAY ────────────────
 PG['s-close']=async()=>{
   const vanId=S.vanId;
-  const [orders,rawDets,loads,carries,settle]=await Promise.all([
-    getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
-    getData('order_details'),
-    getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
-    getData('carryover',`?to_date=eq.${TODAY}&van_id=eq.${vanId}`),
-    getData('settlements',`?date=eq.${TODAY}&van_id=eq.${vanId}`)
+  // Detect which date has orders — today or tomorrow
+  const tmrwDate=tmrw();
+  let closeDate=TODAY;
+  const todOrders=await sbG('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+  const tmrwOrders=await sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`);
+  if(tmrwOrders.length>0)closeDate=tmrwDate;
+  const orders=closeDate===TODAY?todOrders:tmrwOrders;
+  const [rawDets,loads,carries,settle]=await Promise.all([
+    orders.length>0?sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`):Promise.resolve([]),
+    getData('van_loads',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
+    getData('carryover',`?to_date=eq.${closeDate}&van_id=eq.${vanId}`),
+    sbG('settlements',`?date=eq.${closeDate}&van_id=eq.${vanId}`)
   ]);
   const st=W.cl||(W.cl={cash:'',note:'',msg:''});
   const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
@@ -1567,18 +1659,25 @@ async function aCloseDay(expectedCash){
   if(!st.cash){st.msg='Enter your cash amount.';render();return;}
   const declared=parseFloat(st.cash);
   const vanId=S.vanId;
-  const orders=await getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
-  const rawDets=await getData('order_details');
-  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const tmrwDate=tmrw();
+  // Detect which date has orders
+  const todO=await sbG('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+  const tmrwO=await sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`);
+  const useDate=tmrwO.length>0?tmrwDate:TODAY;
+  const orders=useDate===tmrwDate?tmrwO:todO;
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
   const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
   const totalDam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
   const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
-  const settleData={date:TODAY,van_id:vanId,total_sold:parseFloat(totalSold.toFixed(2)),total_damage:parseFloat(totalDam.toFixed(2)),total_credit_given:parseFloat(totalCredit.toFixed(2)),expected_cash:parseFloat(expectedCash),salesman_declared_cash:declared,status:'salesman_submitted',salesman_submitted_at:new Date().toISOString()};
+  const settleData={date:useDate,van_id:parseInt(vanId),total_sold:parseFloat(totalSold.toFixed(2)),total_damage:parseFloat(totalDam.toFixed(2)),total_credit_given:parseFloat(totalCredit.toFixed(2)),expected_cash:parseFloat(expectedCash),salesman_declared_cash:declared,status:'salesman_submitted',salesman_submitted_at:new Date().toISOString()};
   try{
-    const ex=await sbG('settlements',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+    const ex=await sbG('settlements',`?date=eq.${useDate}&van_id=eq.${vanId}`);
     if(ex.length)await sbU('settlements',`?id=eq.${ex[0].id}`,settleData);
     else await sbP('settlements',[settleData]);
-  }catch(e){qAdd({type:'ins',table:'settlements',data:settleData});}
+  }catch(e){qAdd({type:'ins',table:'settlements',data:settleData});updSync();}
   W.cl={cash:'',note:'',msg:''};render();
 }
 
