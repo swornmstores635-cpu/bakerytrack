@@ -428,12 +428,12 @@ const TITLES={
   'o-ops-mobile':'Operations','o-fin-mobile':'Finance',
   'o-analytics':'Analytics','o-van-report':'Van Performance','o-shop-report':'Shop Report','o-period-report':'Period Report',
   's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
-  's-history':'My Sales','s-close':'Close My Day','s-more':'More'
+  's-history':'My Sales','s-close':'Close My Day','s-more':'More','s-performance':'My Performance','s-customers':'My Customers'
 };
 const ROOT_O=['o-dash','o-more','o-ops-mobile','o-fin-mobile','o-analytics'];
-const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more'];
+const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more','s-performance','s-customers'];
 const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-ops-mobile',l:'Operations',ic:'🚐'},{id:'o-fin-mobile',l:'Finance',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'},{id:'o-more',l:'More',ic:'⚙️'}];
-const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-credits',l:'Credits',ic:'💳'},{id:'s-close',l:'Close Day',ic:'🏁'},{id:'s-more',l:'More',ic:'⚙️'}];
+const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-performance',l:'My Stats',ic:'📊'},{id:'s-customers',l:'Customers',ic:'🏪'},{id:'s-more',l:'More',ic:'⚙️'}];
 const ONAV=[
   {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'}]},
   {s:'Operations',i:[{id:'o-prod',l:'Production',ic:'🏭'},{id:'o-load',l:'Van Loading',ic:'🚐'},{id:'o-stock',l:'Van Stock',ic:'📦'},{id:'o-carry',l:'Carryover',ic:'🔄'}]},
@@ -463,7 +463,7 @@ function buildNav(){
     ONAV.forEach(sec=>{h+=`<div class="sb-sec"><div class="sb-lbl">${sec.s}</div>`;sec.i.forEach(n=>{h+=`<button class="sbi${p===n.id?' ao':''}" onclick="goTo('${n.id}')"><span class="sbi-ic">${n.ic}</span>${n.l}</button>`;});h+=`</div>`;});
   } else {
     h+=`<div class="sb-sec"><div class="sb-lbl">Sales</div><button class="sbi${p==='s-sale'?' as':''}" onclick="goTo('s-sale')"><span class="sbi-ic">🛒</span>New Sale</button><button class="sbi${p==='s-stock'?' as':''}" onclick="goTo('s-stock')"><span class="sbi-ic">📦</span>My Stock</button></div>`;
-    h+=`<div class="sb-sec"><div class="sb-lbl">Info</div><button class="sbi${p==='s-credits'?' as':''}" onclick="goTo('s-credits')"><span class="sbi-ic">💳</span>Shop Credits</button><button class="sbi${p==='s-history'?' as':''}" onclick="goTo('s-history')"><span class="sbi-ic">🗂</span>My Sales</button><button class="sbi${p==='s-close'?' as':''}" onclick="goTo('s-close')"><span class="sbi-ic">🏁</span>Close My Day</button></div>`;
+    h+=`<div class="sb-sec"><div class="sb-lbl">My Reports</div><button class="sbi${p==='s-performance'?' as':''}" onclick="goTo('s-performance')"><span class="sbi-ic">📊</span>My Performance</button><button class="sbi${p==='s-customers'?' as':''}" onclick="goTo('s-customers')"><span class="sbi-ic">🏪</span>My Customers</button><button class="sbi${p==='s-credits'?' as':''}" onclick="goTo('s-credits')"><span class="sbi-ic">💳</span>Shop Credits</button><button class="sbi${p==='s-history'?' as':''}" onclick="goTo('s-history')"><span class="sbi-ic">🗂</span>My Sales</button><button class="sbi${p==='s-close'?' as':''}" onclick="goTo('s-close')"><span class="sbi-ic">🏁</span>Close My Day</button></div>`;
   }
   h+=`<button class="sb-out" onclick="logout()">🚪 Sign Out</button>`;
   document.getElementById('sidebar').innerHTML=h;
@@ -1766,6 +1766,239 @@ PG['s-close']=async()=>{
 };
 
 // ── SALESMAN: MORE ────────────────────────
+// ── SALESMAN: MY PERFORMANCE ──────────────
+PG['s-performance']=async()=>{
+  const vanId=S.vanId;
+  const mode=W.spm||'weekly';W.spm=mode;
+  const now=new Date();
+  let fromDate,toDate=TODAY,label='';
+  if(mode==='daily'){fromDate=TODAY;toDate=TODAY;label='Today';}
+  else if(mode==='weekly'){const d=new Date(now);d.setDate(d.getDate()-6);fromDate=d.toISOString().split('T')[0];label='Last 7 Days';}
+  else if(mode==='monthly'){const d=new Date(now);d.setDate(1);fromDate=d.toISOString().split('T')[0];label='This Month';}
+  else{fromDate=W.spFrom||TODAY;toDate=W.spTo||TODAY;label='Custom';}
+
+  const [products,orders]=await Promise.all([
+    getData('products'),
+    sbG('orders',`?van_id=eq.${vanId}&date=gte.${fromDate}&date=lte.${toDate}&order=date.asc`)
+  ]);
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
+
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const credit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const cash=rev-credit;
+  const soldQ=dets.reduce((s,d)=>s+(+d.qty_sold||0),0);
+  const retQ=dets.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+  const retRate=soldQ>0?((retQ/soldQ)*100).toFixed(1):0;
+  const damRate=rev>0?((dam/rev)*100).toFixed(1):0;
+  const creditRate=rev>0?((credit/rev)*100).toFixed(1):0;
+
+  // Sales by day
+  const byDay={};
+  orders.forEach(o=>{byDay[o.date]=(byDay[o.date]||0)+(+o.total||0);});
+  const dayLabels=Object.keys(byDay).sort();
+  const dayVals=dayLabels.map(d=>+(byDay[d]||0).toFixed(2));
+  const avgPerDay=dayLabels.length>0?(rev/dayLabels.length).toFixed(0):0;
+
+  // Per product breakdown
+  const prodBreakdown=products.map(p=>{
+    const pd=dets.filter(d=>d.product_id==p.id);
+    const sold=pd.reduce((s,d)=>s+(+d.qty_sold||0),0);
+    const r=pd.reduce((s,d)=>s+(+d.line_total||0),0);
+    const dm=pd.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const ret=pd.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+    return{...p,sold,rev:r,dm,ret};
+  }).filter(p=>p.sold>0).sort((a,b)=>b.rev-a.rev);
+
+  const maxRev=Math.max(...prodBreakdown.map(p=>p.rev),1);
+
+  return `
+  <div class="van-hdr">
+    <div class="vh-t">📊 ${S.vanName} — My Performance</div>
+    <div class="vh-s">${S.driver} · ${label}</div>
+    <div class="vh-stats">
+      <div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div>
+      <div class="vhs"><div class="vhs-v">${RsC(rev).replace('Rs. ','')}</div><div class="vhs-l">Revenue</div></div>
+      <div class="vhs"><div class="vhs-v">${dayLabels.length}</div><div class="vhs-l">Working Days</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${['daily','weekly','monthly','custom'].map(m=>`<button class="btn btn-sm ${mode===m?'btn-red':''}" onclick="W.spm='${m}';render()">${m==='daily'?'Today':m==='weekly'?'7 Days':m==='monthly'?'Month':'Custom'}</button>`).join('')}
+  </div>
+  ${mode==='custom'?`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="fg" style="flex:1;margin:0"><label class="fl">From</label><input type="date" class="fi" value="${fromDate}" onchange="W.spFrom=this.value;render()"/></div>
+    <div class="fg" style="flex:1;margin:0"><label class="fl">To</label><input type="date" class="fi" value="${toDate}" onchange="W.spTo=this.value;render()"/></div>
+  </div>`:''}
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Cash Collected</div><div class="mv cgrn">${RsC(cash)}</div></div>
+    <div class="mc"><div class="ml">Credit Given</div><div class="mv camb">${RsC(credit)}</div><div class="ms">${creditRate}% of sales</div></div>
+    <div class="mc"><div class="ml">Damage Deducted</div><div class="mv cred">${RsC(dam)}</div><div class="ms">${damRate}% of revenue</div></div>
+    <div class="mc"><div class="ml">Return Rate</div>
+      <div class="mv ${parseFloat(retRate)>5?'cred':parseFloat(retRate)>2?'camb':'cgrn'}">${retRate}%</div>
+      <div class="ms">${retQ} pkts returned</div>
+    </div>
+  </div>
+  ${dayLabels.length>0?`<div class="card"><div class="chdr"><div class="ct">Daily Revenue</div><div style="font-size:12px;color:var(--txs)">Avg ${RsC(+avgPerDay)}/day</div></div>
+    <div style="display:flex;align-items:flex-end;gap:3px;height:80px">
+      ${dayLabels.map((d,i)=>{const pct=dayVals[i]/Math.max(...dayVals)*100;return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="font-size:9px;color:var(--txs)">${RsC(dayVals[i]).replace('Rs. ','')}</div>
+        <div style="width:100%;background:var(--red);border-radius:3px 3px 0 0;opacity:.85;height:${Math.max(4,pct*0.6)}px"></div>
+        <div style="font-size:8px;color:var(--txs);white-space:nowrap">${d.slice(5)}</div>
+      </div>`;}).join('')}
+    </div>
+  </div>`:''}
+  <div class="card"><div class="ct">Products I Sold</div>
+    ${prodBreakdown.length?prodBreakdown.map(p=>`
+    <div style="padding:9px 0;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:13px;font-weight:700">${p.name}</div>
+          <div style="font-size:11px;color:var(--txs);margin-top:2px">${p.sold} sold · ${p.ret} returned${p.dm>0?' · Damage: '+RsC(p.dm):''}</div>
+        </div>
+        <div style="font-size:14px;font-weight:800;color:var(--red)">${RsC(p.rev)}</div>
+      </div>
+      <div style="background:var(--bd);border-radius:100px;height:4px;margin-top:6px;overflow:hidden">
+        <div style="height:100%;background:var(--red);border-radius:100px;width:${(p.rev/maxRev*100).toFixed(0)}%"></div>
+      </div>
+    </div>`).join(''):'<div class="empty" style="padding:12px"><div class="et">No sales in this period</div></div>'}
+  </div>
+  <div class="card"><div class="ct">💡 Performance Tips</div>
+    <div style="font-size:13px;color:var(--txs);line-height:1.7">
+      ${parseFloat(creditRate)>30?'⚠ <b>High credit rate ('+creditRate+'%)</b> — Try to collect more cash payments from shops.':'✓ Credit rate is under control.'}
+      <br>${parseFloat(retRate)>5?'⚠ <b>High return rate ('+retRate+'%)</b> — Check product freshness and shop storage conditions.':'✓ Return rate is healthy.'}
+      <br>${parseFloat(damRate)>10?'⚠ <b>Damage rate is high ('+damRate+'%)</b> — Handle products carefully during delivery.':'✓ Damage rate is acceptable.'}
+    </div>
+  </div>`;
+};
+
+// ── SALESMAN: MY CUSTOMERS ────────────────
+PG['s-customers']=async()=>{
+  const vanId=S.vanId;
+  const mode=W.scm||'monthly';W.scm=mode;
+  const now=new Date();
+  let fromDate,toDate=TODAY,label='';
+  if(mode==='weekly'){const d=new Date(now);d.setDate(d.getDate()-6);fromDate=d.toISOString().split('T')[0];label='Last 7 Days';}
+  else if(mode==='monthly'){const d=new Date(now);d.setDate(1);fromDate=d.toISOString().split('T')[0];label='This Month';}
+  else if(mode==='all'){fromDate='2020-01-01';label='All Time';}
+  else{fromDate=W.scFrom||TODAY;toDate=W.scTo||TODAY;label='Custom';}
+
+  const [shops,credits,areas,orders]=await Promise.all([
+    getData('shops',`?van_id=eq.${vanId}&active=eq.true&order=name`),
+    getData('shop_credits'),
+    getData('areas',`?van_id=eq.${vanId}`),
+    sbG('orders',`?van_id=eq.${vanId}&date=gte.${fromDate}&date=lte.${toDate}`)
+  ]);
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
+
+  const shopData=shops.map(s=>{
+    const sO=orders.filter(o=>o.shop_id===s.id);
+    const sD=dets.filter(d=>sO.map(o=>o.id).includes(d.order_id));
+    const rev=sO.reduce((s2,o)=>s2+(+o.total||0),0);
+    const cr=sO.reduce((s2,o)=>s2+(+o.credit_amount||0),0);
+    const dam=sD.reduce((s2,d)=>s2+(+d.damage_deduction||0),0);
+    const soldQ=sD.reduce((s2,d)=>s2+(+d.qty_sold||0),0);
+    const retQ=sD.reduce((s2,d)=>s2+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+    const balance=+(credits.find(c=>c.shop_id===s.id)?.balance||0);
+    const area=areas.find(a=>a.id===s.area_id);
+    const lastOrder=sO.sort((a,b)=>b.date.localeCompare(a.date))[0];
+    return{...s,orders:sO.length,rev,cr,dam,soldQ,retQ,balance,areaName:area?.name||'',lastOrder:lastOrder?.date||null};
+  });
+
+  const ordered=shopData.filter(s=>s.orders>0).sort((a,b)=>b.rev-a.rev);
+  const notOrdered=shopData.filter(s=>s.orders===0);
+  const filter=W.scf||'all';
+
+  // Group not-ordered by area
+  const areaGroups={};
+  notOrdered.forEach(s=>{const k=s.areaName||'No Area';if(!areaGroups[k])areaGroups[k]=[];areaGroups[k].push(s);});
+
+  return `
+  <div class="van-hdr">
+    <div class="vh-t">🏪 ${S.vanName} — My Customers</div>
+    <div class="vh-s">${S.driver} · ${label}</div>
+    <div class="vh-stats">
+      <div class="vhs"><div class="vhs-v">${ordered.length}</div><div class="vhs-l">Ordered</div></div>
+      <div class="vhs"><div class="vhs-v">${notOrdered.length}</div><div class="vhs-l">Not Yet</div></div>
+      <div class="vhs"><div class="vhs-v">${shops.length}</div><div class="vhs-l">Total Shops</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${['weekly','monthly','all','custom'].map(m=>`<button class="btn btn-sm ${mode===m?'btn-red':''}" onclick="W.scm='${m}';render()">${m==='weekly'?'7 Days':m==='monthly'?'Month':m==='all'?'All Time':'Custom'}</button>`).join('')}
+  </div>
+  ${mode==='custom'?`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="fg" style="flex:1;margin:0"><label class="fl">From</label><input type="date" class="fi" value="${fromDate}" onchange="W.scFrom=this.value;render()"/></div>
+    <div class="fg" style="flex:1;margin:0"><label class="fl">To</label><input type="date" class="fi" value="${toDate}" onchange="W.scTo=this.value;render()"/></div>
+  </div>`:''}
+  <div style="display:flex;gap:6px;margin-bottom:11px">
+    <button class="btn btn-sm ${filter==='all'?'btn-red':''}" onclick="W.scf='all';render()">All Shops</button>
+    <button class="btn btn-sm ${filter==='ordered'?'btn-red':''}" onclick="W.scf='ordered';render()">Ordered (${ordered.length})</button>
+    <button class="btn btn-sm ${filter==='not'?'btn-red':''}" onclick="W.scf='not';render()">Not Ordered (${notOrdered.length})</button>
+    <button class="btn btn-sm ${filter==='owe'?'btn-red':''}" onclick="W.scf='owe';render()">Owe Money</button>
+  </div>
+
+  ${(filter==='all'||filter==='ordered')&&ordered.length>0?`
+  <div class="card"><div class="chdr"><div class="ct">Ordered This Period</div><span class="badge bg">${ordered.length} shops</span></div>
+    ${ordered.map((s,i)=>`<div style="padding:11px 0;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--txs);font-weight:700;min-width:18px">#${i+1}</span>
+            <div style="font-size:13px;font-weight:700">${s.name}</div>
+          </div>
+          <div style="font-size:11px;color:var(--txs);margin-top:2px;margin-left:24px">
+            ${s.areaName?s.areaName+' · ':''}${s.orders} orders · ${s.soldQ} pkts sold
+            ${s.retQ>0?` · <span style="color:var(--amb)">${s.retQ} returned</span>`:''}
+            ${s.dam>0?` · <span style="color:var(--red)">Dmg: ${RsC(s.dam)}</span>`:''}
+          </div>
+          ${s.lastOrder?`<div style="font-size:10px;color:var(--txt);margin-left:24px;margin-top:1px">Last order: ${bsL(s.lastOrder)}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:8px">
+          <div style="font-size:14px;font-weight:800;color:var(--red)">${RsC(s.rev)}</div>
+          ${+s.balance>0?`<div style="font-size:11px;font-weight:700;color:var(--red)">Owes ${RsC(s.balance)}</div>`:''}
+          ${+s.balance<0?`<div style="font-size:11px;font-weight:700;color:var(--grn)">Cr ${RsC(-s.balance)}</div>`:''}
+          ${s.cr>0?`<div style="font-size:10px;color:var(--amb)">Credit: ${RsC(s.cr)}</div>`:''}
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>`:''}
+
+  ${(filter==='all'||filter==='not')&&notOrdered.length>0?`
+  <div class="card">
+    <div class="chdr"><div class="ct">Not Ordered This Period</div><span class="badge br">${notOrdered.length} shops</span></div>
+    <div class="al al-w" style="margin-bottom:11px">📋 These shops are on your route but have not ordered ${label.toLowerCase()}. Visit them!</div>
+    ${Object.entries(areaGroups).map(([area,aShops])=>`
+      <div style="font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.05em;padding:6px 0 3px">📍 ${area}</div>
+      ${aShops.map(s=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd)">
+        <div>
+          <div style="font-size:13px;font-weight:600">${s.name}</div>
+          <div style="font-size:11px;color:var(--txs);margin-top:1px">${s.phone||'No phone'}${+s.balance>0?` · <b style="color:var(--red)">Owes ${RsC(s.balance)}</b>`:''}</div>
+        </div>
+        <button class="btn btn-sm btn-red" onclick="W.sale={shopId:${s.id},shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:'${toDate}',rows:[],pm:'cash',paidNow:0,msg:'',lastReceipt:null};goTo('s-sale')">Sell Now →</button>
+      </div>`).join('')}
+    `).join('')}
+  </div>`:''}
+
+  ${filter==='owe'?`
+  <div class="card"><div class="chdr"><div class="ct">Shops That Owe Money</div><span class="badge br">${shopData.filter(s=>+s.balance>0).length} shops</span></div>
+    ${shopData.filter(s=>+s.balance>0).sort((a,b)=>b.balance-a.balance).map(s=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)">
+      <div>
+        <div style="font-size:13px;font-weight:700">${s.name}</div>
+        <div style="font-size:11px;color:var(--txs);margin-top:2px">${s.areaName||''} · ${s.phone||'No phone'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:16px;font-weight:800;color:var(--red)">${RsC(s.balance)}</div>
+        <div style="font-size:10px;color:var(--txs)">outstanding</div>
+      </div>
+    </div>`).join('')||'<div class="empty" style="padding:12px"><div class="et">No shops owe money</div></div>'}
+  </div>`:''}`;
+};
+
 PG['s-more']=()=>Promise.resolve(`
   <div class="card" style="text-align:center;padding:20px 16px 14px">
     <div style="font-size:46px;margin-bottom:10px">🥐</div>
@@ -1776,10 +2009,12 @@ PG['s-more']=()=>Promise.resolve(`
       <div style="font-size:12px;color:var(--txs);margin-top:2px">${S.driver}</div>
     </div>
   </div>
+  <div class="sec-lbl">My Reports</div>
   <div class="mgrid" style="margin-bottom:12px">
-    <button class="mc-btn" onclick="goTo('s-sale')"><span class="mc-ic">🛒</span><span class="mc-t">New Sale</span><span class="mc-s">Record a sale</span></button>
-    <button class="mc-btn" onclick="goTo('s-stock')"><span class="mc-ic">📦</span><span class="mc-t">My Stock</span><span class="mc-s">Van inventory</span></button>
+    <button class="mc-btn" onclick="goTo('s-performance')"><span class="mc-ic">📊</span><span class="mc-t">My Performance</span><span class="mc-s">Sales, returns, damage stats</span></button>
+    <button class="mc-btn" onclick="goTo('s-customers')"><span class="mc-ic">🏪</span><span class="mc-t">My Customers</span><span class="mc-s">Shop report + who to visit</span></button>
     <button class="mc-btn" onclick="goTo('s-credits')"><span class="mc-ic">💳</span><span class="mc-t">Credits</span><span class="mc-s">Shop balances</span></button>
+    <button class="mc-btn" onclick="goTo('s-history')"><span class="mc-ic">🗂</span><span class="mc-t">My Sales</span><span class="mc-s">Order history</span></button>
     <button class="mc-btn" onclick="goTo('s-close')"><span class="mc-ic">🏁</span><span class="mc-t">Close My Day</span><span class="mc-s">Hand over cash</span></button>
   </div>
   <button class="btn btn-full" style="border-color:var(--red);color:var(--red)" onclick="logout()">🚪 Sign Out</button>`);
