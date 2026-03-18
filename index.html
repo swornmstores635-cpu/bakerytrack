@@ -1350,7 +1350,21 @@ async function aSaveVan(){
   W.van={name:'',driver:'',pin:'',edit:null,msg:st.edit?'✓ Van updated.':'✓ Van added.'};render();
 }
 async function aEditVan(id){const v=(await sbG('vans',`?id=eq.${id}`))[0];if(v){W.van={name:v.name,driver:v.driver,pin:v.pin||'',edit:id,msg:''};render();}}
-async function aDelVan(id){if(!confirm('Delete this van? This cannot be undone.'))return;await sbU('vans',`?id=eq.${id}`,{active:false});const vans=await sbG('vans');cs('vans',vans);render();}
+async function aDelVan(id){
+  if(!confirm('Delete this van? This cannot be undone.'))return;
+  try{
+    // First remove related loads then delete van
+    await sbD('van_loads',`?van_id=eq.${id}`);
+    await sbD('vans',`?id=eq.${id}`);
+    W.van={name:'',driver:'',pin:'',edit:null,msg:'✓ Van deleted.'};
+  }catch(e){
+    // If hard delete fails (foreign key), try soft delete
+    try{await sbU('vans',`?id=eq.${id}`,{active:false,name:'[deleted]'});}
+    catch(e2){alert('Delete failed: '+e2.message);return;}
+    W.van={name:'',driver:'',pin:'',edit:null,msg:'✓ Van removed.'};
+  }
+  const vans=await sbG('vans');cs('vans',vans);render();
+}
 
 async function aSaveArea(){
   const st=W.ar;if(!st.name||!st.vanId){st.msg='Name and van required.';render();return;}
@@ -1368,7 +1382,7 @@ async function aSaveShop(){
   W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:st.edit?'✓ Shop updated.':'✓ Shop added.'};render();
 }
 async function aEditShop(id){const s=(await sbG('shops',`?id=eq.${id}`))[0];if(s){W.shp={name:s.name,address:s.address||'',phone:s.phone||'',contact:s.contact_name||'',vanId:s.van_id,areaId:s.area_id||'',openBal:'',edit:id,msg:''};render();}}
-async function aDelShop(id){if(!confirm('Delete this shop? Their credit balance will also be removed.'))return;await sbD('shop_credits',`?shop_id=eq.${id}`);await sbU('shops',`?id=eq.${id}`,{active:false});render();}
+async function aDelShop(id){if(!confirm('Delete this shop? This cannot be undone.'))return;try{await sbD('shop_credits',`?shop_id=eq.${id}`);await sbD('shops',`?id=eq.${id}`);W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:'2713 Shop deleted.'};render();}catch(e){try{await sbU('shops',`?id=eq.${id}`,{active:false});}catch(e2){alert('Delete failed: '+e2.message);return;}W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:'2713 Shop hidden.'};render();}}
 
 async function aProd(){const st=W.pr;if(!st.pid||!st.qty){st.msg='Select product and enter qty.';render();return;}await write('production',{date:st.date,product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.pr={date:st.date,pid:'',qty:'',msg:'✓ Production logged.'};render();}
 async function aLoad(){const st=W.vl;if(!st.vanId||!st.pid||!st.qty){st.msg='Fill all fields.';render();return;}await write('van_loads',{date:st.date,van_id:parseInt(st.vanId),product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.vl={date:st.date,vanId:st.vanId,pid:'',qty:'',msg:'✓ Van loaded.'};render();}
