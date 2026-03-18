@@ -425,12 +425,13 @@ const TITLES={
   'o-carry':'Stock Carryover','o-credits':'Shop Credits','o-settle':'Settlement',
   'o-history':'Sales History','o-setup':'Setup','o-setup-prod':'Products',
   'o-setup-vans':'Vans & PINs','o-setup-shops':'Shops','o-setup-areas':'Areas','o-more':'More',
+  'o-ops-mobile':'Operations','o-fin-mobile':'Finance',
   's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
   's-history':'My Sales','s-close':'Close My Day','s-more':'More'
 };
-const ROOT_O=['o-dash','o-more'];
+const ROOT_O=['o-dash','o-more','o-ops-mobile','o-fin-mobile'];
 const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more'];
-const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Report',ic:'📈'},{id:'o-stock',l:'Stock',ic:'📦'},{id:'o-settle',l:'Settle',ic:'💰'},{id:'o-more',l:'More',ic:'⚙️'}];
+const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-ops-mobile',l:'Operations',ic:'🚐'},{id:'o-fin-mobile',l:'Finance',ic:'💰'},{id:'o-rpt',l:'Report',ic:'📈'},{id:'o-more',l:'More',ic:'⚙️'}];
 const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-credits',l:'Credits',ic:'💳'},{id:'s-close',l:'Close Day',ic:'🏁'},{id:'s-more',l:'More',ic:'⚙️'}];
 const ONAV=[
   {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'}]},
@@ -849,7 +850,7 @@ PG['o-setup-vans']=async()=>{
     <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveVan()">${st.edit?'Update':'Add Van'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.van={name:'',driver:'',pin:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
   </div>
   <div class="card"><div class="ct">All Vans</div>
-    ${vans.map(v=>`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${v.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">Driver: ${v.driver} · PIN: ${v.pin||'—'}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditVan(${v.id})">✏️</button></div></div>`).join('')}
+    ${vans.map(v=>`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${v.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">Driver: ${v.driver} · PIN: ${v.pin||'—'}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditVan(${v.id})">✏️</button><button class="btn-ico" onclick="aDelVan(${v.id})">🗑</button></div></div>`).join('')}
   </div>`;
 };
 
@@ -887,14 +888,44 @@ PG['o-setup-shops']=async()=>{
     <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveShop()">${st.edit?'Update':'Add Shop'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
   </div>
   <div class="card"><div class="chdr"><div class="ct">All Shops (${shops.length})</div></div>
-    ${shops.map(s=>{const v=vans.find(x=>x.id==s.van_id),a=areas.find(x=>x.id==s.area_id);const cr=credits.find(c=>c.shop_id===s.id);const bal=cr?(+cr.balance||0):0;return`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${v?v.name:'—'}${a?' · '+a.name:''} · ${s.phone||'No phone'}${bal!==0?' · <b style="color:'+(bal>0?'var(--red)':'var(--grn)')+'">'+RsC(Math.abs(bal))+'</b>':''}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditShop(${s.id})">✏️</button></div></div>`;}).join('')}
+    ${shops.map(s=>{const v=vans.find(x=>x.id==s.van_id),a=areas.find(x=>x.id==s.area_id);const cr=credits.find(c=>c.shop_id===s.id);const bal=cr?(+cr.balance||0):0;return`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${v?v.name:'—'}${a?' · '+a.name:''} · ${s.phone||'No phone'}${bal!==0?' · <b style="color:'+(bal>0?'var(--red)':'var(--grn)')+'">'+RsC(Math.abs(bal))+'</b>':''}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditShop(${s.id})">✏️</button><button class="btn-ico" onclick="aDelShop(${s.id})">🗑</button></div></div>`;}).join('')}
   </div>`;
 };
 
+// ── MOBILE: OPERATIONS HUB ───────────────
+PG['o-ops-mobile']=()=>Promise.resolve(`
+  <div class="sec-lbl">Operations</div>
+  <div class="mgrid">
+    <button class="mc-btn" onclick="goTo('o-prod')"><span class="mc-ic">🏭</span><span class="mc-t">Production</span><span class="mc-s">Log factory output</span></button>
+    <button class="mc-btn" onclick="goTo('o-load')"><span class="mc-ic">🚐</span><span class="mc-t">Van Loading</span><span class="mc-s">Evening van loads</span></button>
+    <button class="mc-btn" onclick="goTo('o-stock')"><span class="mc-ic">📦</span><span class="mc-t">Van Stock</span><span class="mc-s">Live stock levels</span></button>
+    <button class="mc-btn" onclick="goTo('o-carry')"><span class="mc-ic">🔄</span><span class="mc-t">Carryover</span><span class="mc-s">Move leftover stock</span></button>
+  </div>`);
+
+// ── MOBILE: FINANCE HUB ──────────────────
+PG['o-fin-mobile']=()=>Promise.resolve(`
+  <div class="sec-lbl">Finance</div>
+  <div class="mgrid">
+    <button class="mc-btn" onclick="goTo('o-settle')"><span class="mc-ic">💰</span><span class="mc-t">Settlement</span><span class="mc-s">End of day cash</span></button>
+    <button class="mc-btn" onclick="goTo('o-credits')"><span class="mc-ic">💳</span><span class="mc-t">Shop Credits</span><span class="mc-s">Outstanding balances</span></button>
+    <button class="mc-btn" onclick="goTo('o-profit')"><span class="mc-ic">📊</span><span class="mc-t">Profit Report</span><span class="mc-s">Revenue vs cost</span></button>
+    <button class="mc-btn" onclick="goTo('o-history')"><span class="mc-ic">🗂</span><span class="mc-t">Sales History</span><span class="mc-s">All orders</span></button>
+  </div>`);
+
 // ── OWNER: MORE ───────────────────────────
-PG['o-more']=()=>Promise.resolve(`<div class="mgrid">
-  ${[{ic:'🏭',t:'Production',s:'Log factory output',p:'o-prod'},{ic:'🚐',t:'Van Loading',s:'Evening van loads',p:'o-load'},{ic:'🔄',t:'Carryover',s:'Move leftover stock',p:'o-carry'},{ic:'💰',t:'Settlement',s:'End of day cash',p:'o-settle'},{ic:'💰',t:'Profit Report',s:'Revenue vs cost',p:'o-profit'},{ic:'⚙️',t:'Setup',s:'Products, vans, shops',p:'o-setup'},{ic:'🗂',t:'Sales History',s:'All orders',p:'o-history'},{ic:'💳',t:'Shop Credits',s:'Outstanding balances',p:'o-credits'}].map(i=>`<button class="mc-btn" onclick="goTo('${i.p}')"><span class="mc-ic">${i.ic}</span><span class="mc-t">${i.t}</span><span class="mc-s">${i.s}</span></button>`).join('')}
-</div>`);
+PG['o-more']=()=>Promise.resolve(`
+  <div class="sec-lbl">Reports</div>
+  <div class="mgrid" style="margin-bottom:12px">
+    <button class="mc-btn" onclick="goTo('o-rpt')"><span class="mc-ic">📈</span><span class="mc-t">Daily Report</span><span class="mc-s">Sales summary + print</span></button>
+    <button class="mc-btn" onclick="goTo('o-profit')"><span class="mc-ic">💰</span><span class="mc-t">Profit Report</span><span class="mc-s">Revenue vs cost</span></button>
+  </div>
+  <div class="sec-lbl">Setup</div>
+  <div class="mgrid">
+    <button class="mc-btn" onclick="goTo('o-setup-prod')"><span class="mc-ic">🍞</span><span class="mc-t">Products</span><span class="mc-s">Names, rates, piece pricing</span></button>
+    <button class="mc-btn" onclick="goTo('o-setup-vans')"><span class="mc-ic">🚌</span><span class="mc-t">Vans & PINs</span><span class="mc-s">Van names, drivers, PINs</span></button>
+    <button class="mc-btn" onclick="goTo('o-setup-shops')"><span class="mc-ic">🏪</span><span class="mc-t">Shops</span><span class="mc-s">Customer shops</span></button>
+    <button class="mc-btn" onclick="goTo('o-setup-areas')"><span class="mc-ic">📍</span><span class="mc-t">Areas / Zones</span><span class="mc-s">Group shops by area</span></button>
+  </div>`);
 
 // ════════════════════════════════════════
 // SALESMAN PAGES
@@ -1319,6 +1350,7 @@ async function aSaveVan(){
   W.van={name:'',driver:'',pin:'',edit:null,msg:st.edit?'✓ Van updated.':'✓ Van added.'};render();
 }
 async function aEditVan(id){const v=(await sbG('vans',`?id=eq.${id}`))[0];if(v){W.van={name:v.name,driver:v.driver,pin:v.pin||'',edit:id,msg:''};render();}}
+async function aDelVan(id){if(!confirm('Delete this van? This cannot be undone.'))return;await sbU('vans',`?id=eq.${id}`,{active:false});const vans=await sbG('vans');cs('vans',vans);render();}
 
 async function aSaveArea(){
   const st=W.ar;if(!st.name||!st.vanId){st.msg='Name and van required.';render();return;}
@@ -1336,6 +1368,7 @@ async function aSaveShop(){
   W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:st.edit?'✓ Shop updated.':'✓ Shop added.'};render();
 }
 async function aEditShop(id){const s=(await sbG('shops',`?id=eq.${id}`))[0];if(s){W.shp={name:s.name,address:s.address||'',phone:s.phone||'',contact:s.contact_name||'',vanId:s.van_id,areaId:s.area_id||'',openBal:'',edit:id,msg:''};render();}}
+async function aDelShop(id){if(!confirm('Delete this shop? Their credit balance will also be removed.'))return;await sbD('shop_credits',`?shop_id=eq.${id}`);await sbU('shops',`?id=eq.${id}`,{active:false});render();}
 
 async function aProd(){const st=W.pr;if(!st.pid||!st.qty){st.msg='Select product and enter qty.';render();return;}await write('production',{date:st.date,product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.pr={date:st.date,pid:'',qty:'',msg:'✓ Production logged.'};render();}
 async function aLoad(){const st=W.vl;if(!st.vanId||!st.pid||!st.qty){st.msg='Fill all fields.';render();return;}await write('van_loads',{date:st.date,van_id:parseInt(st.vanId),product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.vl={date:st.date,vanId:st.vanId,pid:'',qty:'',msg:'✓ Van loaded.'};render();}
