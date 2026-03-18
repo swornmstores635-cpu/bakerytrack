@@ -704,22 +704,59 @@ PG['o-load']=async()=>{
 
 // ── OWNER: VAN STOCK ──────────────────────
 PG['o-stock']=async()=>{
-  const [vans,products,loads,orders,rawDets,carries]=await Promise.all([getData('vans','?active=eq.true&order=name'),getData('products','?active=eq.true&order=sort_order,name'),getData('van_loads',`?date=eq.${TODAY}`),getData('orders',`?date=eq.${TODAY}`),getData('order_details'),getData('carryover',`?to_date=eq.${TODAY}`)]);
+  // Default to tomorrow if that has loads, otherwise today
+  const stockDate=W.stockDate||(()=>{const t=tmrw();return t;})();
+  W.stockDate=stockDate;
+  const [vans,products,loads,orders,rawDets,carries]=await Promise.all([
+    getData('vans','?active=eq.true&order=name'),
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('van_loads',`?date=eq.${stockDate}`),
+    getData('orders',`?date=eq.${stockDate}`),
+    getData('order_details'),
+    getData('carryover',`?to_date=eq.${stockDate}`)
+  ]);
   const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
   const fv=W.fv||'';
-  let h=`<div class="fg"><select class="fi" onchange="W.fv=parseInt(this.value)||'';render()"><option value="">All Vans</option>${vans.map(v=>`<option value="${v.id}" ${fv==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>`;
+  // If no loads found for selected date, show a warning
+  const hasAnyLoads=loads.length>0;
+  let h=`
+  <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:11px;flex-wrap:wrap">
+    <div style="flex:1;min-width:160px">
+      <label class="fl">Stock Date</label>
+      <input type="date" class="fi" value="${stockDate}" onchange="W.stockDate=this.value;W.fv='';render()"/>
+      <div class="dh">BS: ${bsL(stockDate)}</div>
+    </div>
+    <div>
+      <button class="btn btn-sm ${stockDate===TODAY?'btn-teal':''}" onclick="W.stockDate='${TODAY}';render()">Today</button>
+      <button class="btn btn-sm ${stockDate===tmrw()?'btn-teal':''}" style="margin-left:6px" onclick="W.stockDate=tmrw();render()">Tomorrow</button>
+    </div>
+  </div>
+  ${!hasAnyLoads?`<div class="al al-w">⚠ No van loads found for ${bsL(stockDate)} (${stockDate}). Go to <b>Van Loading</b> to load the vans first.</div>`:''}
+  <div class="fg"><select class="fi" onchange="W.fv=parseInt(this.value)||'';render()"><option value="">All Vans</option>${vans.map(v=>`<option value="${v.id}" ${fv==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>`;
   (fv?vans.filter(v=>v.id==fv):vans).forEach(van=>{
     let rows='',ok=false;
     products.forEach(p=>{
       const l=loads.filter(x=>x.van_id===van.id&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
       const c=carries.filter(x=>x.van_id===van.id&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
       if(!l&&!c)return;ok=true;
-      const sold=dets.filter(x=>orders.filter(o=>o.van_id===van.id).map(o=>o.id).includes(x.order_id)&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty_sold||0),0);
+      const vanOrderIds=orders.filter(o=>o.van_id===van.id).map(o=>o.id);
+      const sold=dets.filter(x=>vanOrderIds.includes(x.order_id)&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty_sold||0),0);
       const tot=l+c,rem=tot-sold,pct=tot>0?rem/tot*100:0;
       rows+=`<div class="srow"><div class="sr-l"><div class="sr-nm">${p.name}</div><div class="pbw" style="max-width:120px"><div class="pb ${pct<20?'crit':pct<40?'low':''}" style="width:${Math.max(0,pct).toFixed(0)}%"></div></div></div>
-        <div class="sr-r"><div class="sr-n"><div class="sr-n-l">Loaded</div><div class="sr-n-v">${tot}</div></div><div class="sr-n"><div class="sr-n-l">Sold</div><div class="sr-n-v cteal">${sold}</div></div><div class="sr-n"><div class="sr-n-l">Left</div><div class="sr-n-v" style="color:${pct<20?'var(--red)':pct<40?'var(--amb)':'var(--tx)'}">${rem}</div></div></div></div>`;
+        <div class="sr-r">
+          <div class="sr-n"><div class="sr-n-l">Loaded</div><div class="sr-n-v">${tot}</div></div>
+          <div class="sr-n"><div class="sr-n-l">Sold</div><div class="sr-n-v cteal">${sold}</div></div>
+          <div class="sr-n"><div class="sr-n-l">Left</div><div class="sr-n-v" style="color:${pct<20?'var(--red)':pct<40?'var(--amb)':'var(--tx)'}">${rem}</div></div>
+        </div>
+      </div>`;
     });
-    h+=`<div class="card"><div class="chdr"><div><div style="font-size:15px;font-weight:700">${van.name}</div><div style="font-size:12px;color:var(--txs)">${van.driver}</div></div><span class="badge ${ok?'bt':'bm'}">${ok?'Active':'Not loaded'}</span></div>${ok?rows:'<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">Not loaded today</div></div>'}</div>`;
+    h+=`<div class="card">
+      <div class="chdr">
+        <div><div style="font-size:15px;font-weight:700">${van.name}</div><div style="font-size:12px;color:var(--txs)">${van.driver}</div></div>
+        <span class="badge ${ok?'bt':'bm'}">${ok?'Loaded':'Not loaded'}</span>
+      </div>
+      ${ok?rows:`<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">No load for this date</div></div>`}
+    </div>`;
   });
   return h;
 };
@@ -934,15 +971,22 @@ PG['o-more']=()=>Promise.resolve(`
 // ── SALESMAN: NEW SALE ────────────────────
 PG['s-sale']=async()=>{
   const vanId=S.vanId;
+  // Auto-detect stock date: check today first, then tomorrow (evening load)
+  let saleStockDate=TODAY;
+  const todayLoads=await getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+  if(!todayLoads.length){
+    const tmrwLoads=await getData('van_loads',`?date=eq.${tmrw()}&van_id=eq.${vanId}`);
+    if(tmrwLoads.length) saleStockDate=tmrw();
+  }
   const [products,pricePts,myShops,areas,loads,orders,rawDets,carries,credits]=await Promise.all([
     getData('products','?active=eq.true&order=sort_order,name'),
     getData('piece_prices','?order=product_id,pieces'),
     getData('shops',`?van_id=eq.${vanId}&active=eq.true&order=name`),
     getData('areas',`?van_id=eq.${vanId}&order=sort_order,name`),
-    getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
-    getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('van_loads',`?date=eq.${saleStockDate}&van_id=eq.${vanId}`),
+    getData('orders',`?date=eq.${saleStockDate}&van_id=eq.${vanId}`),
     getData('order_details'),
-    getData('carryover',`?to_date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('carryover',`?to_date=eq.${saleStockDate}&van_id=eq.${vanId}`),
     getData('shop_credits')
   ]);
   const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
@@ -956,7 +1000,10 @@ PG['s-sale']=async()=>{
     return l+c-s;
   }
 
-  const st=W.sale||(W.sale={shopId:'',shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:TODAY,rows:[],pm:'cash',paidNow:0,msg:''});
+  const st=W.sale||(W.sale={shopId:'',shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:saleStockDate,rows:[],pm:'cash',paidNow:0,msg:''});
+  if(!W.sale){W.sale=st;}
+  // Update date if stock date changed
+  if(st.date===TODAY&&saleStockDate!==TODAY) st.date=saleStockDate;
   W.sale=st;
 
   const selShop=myShops.find(s=>s.id==st.shopId);
@@ -1098,7 +1145,20 @@ function renderShopList(){
 // ── SALESMAN: MY STOCK ────────────────────
 PG['s-stock']=async()=>{
   const vanId=S.vanId;
-  const [products,loads,orders,rawDets,carries]=await Promise.all([getData('products','?active=eq.true&order=sort_order,name'),getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),getData('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),getData('order_details'),getData('carryover',`?to_date=eq.${TODAY}&van_id=eq.${vanId}`)]);
+  // Check today first, if no loads check tomorrow (loaded last evening)
+  let stockDate=TODAY;
+  const todayCheck=await getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
+  if(!todayCheck.length){
+    const tmrwCheck=await getData('van_loads',`?date=eq.${tmrw()}&van_id=eq.${vanId}`);
+    if(tmrwCheck.length) stockDate=tmrw();
+  }
+  const [products,loads,orders,rawDets,carries]=await Promise.all([
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('van_loads',`?date=eq.${stockDate}&van_id=eq.${vanId}`),
+    getData('orders',`?date=eq.${stockDate}&van_id=eq.${vanId}`),
+    getData('order_details'),
+    getData('carryover',`?to_date=eq.${stockDate}&van_id=eq.${vanId}`)
+  ]);
   const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
   let rows='',ok=false;
   products.forEach(p=>{
@@ -1110,8 +1170,9 @@ PG['s-stock']=async()=>{
     rows+=`<div class="srow"><div class="sr-l"><div class="sr-nm">${p.name}</div><div style="font-size:11px;color:var(--txs);margin-top:1px">Rs. ${p.rate}/pkt</div><div class="pbw" style="max-width:110px"><div class="pb ${pct<20?'crit':pct<40?'low':''}" style="width:${Math.max(0,pct).toFixed(0)}%"></div></div></div>
       <div class="sr-r"><div class="sr-n"><div class="sr-n-l">Loaded</div><div class="sr-n-v">${tot}</div></div><div class="sr-n"><div class="sr-n-l">Sold</div><div class="sr-n-v cteal">${sold}</div></div><div class="sr-n"><div class="sr-n-l">Left</div><div class="sr-n-v" style="color:${pct<20?'var(--red)':pct<40?'var(--amb)':'var(--tx)'}">${rem}</div></div></div></div>`;
   });
-  return `<div class="van-hdr"><div class="vh-t">📦 ${S.vanName} — My Stock</div><div class="vh-s">Today: ${bsL(TODAY)} · ${TODAY}</div></div>
-    <div class="card">${ok?rows:'<div class="empty"><div class="ei">📦</div><div class="et">Van not loaded yet</div><div class="es">Contact manager</div></div>'}</div>`;
+  const dateLabel=stockDate===TODAY?`Today: ${bsL(TODAY)}`:`Tomorrow's load: ${bsL(stockDate)}`;
+  return `<div class="van-hdr"><div class="vh-t">📦 ${S.vanName} — My Stock</div><div class="vh-s">${dateLabel} · ${stockDate}</div></div>
+    <div class="card">${ok?rows:'<div class="empty"><div class="ei">📦</div><div class="et">Van not loaded yet</div><div class="es">Contact your manager</div></div>'}</div>`;
 };
 
 // ── SALESMAN: SHOP CREDITS ────────────────
