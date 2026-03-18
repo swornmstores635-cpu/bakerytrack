@@ -426,15 +426,16 @@ const TITLES={
   'o-history':'Sales History','o-setup':'Setup','o-setup-prod':'Products',
   'o-setup-vans':'Vans & PINs','o-setup-shops':'Shops','o-setup-areas':'Areas','o-more':'More',
   'o-ops-mobile':'Operations','o-fin-mobile':'Finance',
+  'o-analytics':'Analytics','o-van-report':'Van Performance','o-shop-report':'Shop Report','o-period-report':'Period Report',
   's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
   's-history':'My Sales','s-close':'Close My Day','s-more':'More'
 };
-const ROOT_O=['o-dash','o-more','o-ops-mobile','o-fin-mobile'];
+const ROOT_O=['o-dash','o-more','o-ops-mobile','o-fin-mobile','o-analytics'];
 const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more'];
-const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-ops-mobile',l:'Operations',ic:'🚐'},{id:'o-fin-mobile',l:'Finance',ic:'💰'},{id:'o-rpt',l:'Report',ic:'📈'},{id:'o-more',l:'More',ic:'⚙️'}];
+const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-ops-mobile',l:'Operations',ic:'🚐'},{id:'o-fin-mobile',l:'Finance',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'},{id:'o-more',l:'More',ic:'⚙️'}];
 const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-credits',l:'Credits',ic:'💳'},{id:'s-close',l:'Close Day',ic:'🏁'},{id:'s-more',l:'More',ic:'⚙️'}];
 const ONAV=[
-  {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'}]},
+  {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'}]},
   {s:'Operations',i:[{id:'o-prod',l:'Production',ic:'🏭'},{id:'o-load',l:'Van Loading',ic:'🚐'},{id:'o-stock',l:'Van Stock',ic:'📦'},{id:'o-carry',l:'Carryover',ic:'🔄'}]},
   {s:'Finance',i:[{id:'o-settle',l:'Settlement',ic:'💰'},{id:'o-credits',l:'Shop Credits',ic:'💳'},{id:'o-history',l:'Sales History',ic:'🗂'}]},
   {s:'Setup',i:[{id:'o-setup',l:'Setup',ic:'⚙️'}]},
@@ -1076,6 +1077,13 @@ PG['o-fin-mobile']=()=>Promise.resolve(`
 
 // ── OWNER: MORE ───────────────────────────
 PG['o-more']=()=>Promise.resolve(`
+  <div class="sec-lbl">Analytics</div>
+  <div class="mgrid" style="margin-bottom:12px">
+    <button class="mc-btn" onclick="goTo('o-analytics')"><span class="mc-ic">📉</span><span class="mc-t">Analytics Hub</span><span class="mc-s">All reports in one place</span></button>
+    <button class="mc-btn" onclick="goTo('o-period-report')"><span class="mc-ic">📅</span><span class="mc-t">Period Report</span><span class="mc-s">Daily · Weekly · Monthly · Yearly</span></button>
+    <button class="mc-btn" onclick="goTo('o-van-report')"><span class="mc-ic">🚐</span><span class="mc-t">Van Performance</span><span class="mc-s">Sales, returns, damage</span></button>
+    <button class="mc-btn" onclick="goTo('o-shop-report')"><span class="mc-ic">🏪</span><span class="mc-t">Shop Report</span><span class="mc-s">Top shops, buying habits</span></button>
+  </div>
   <div class="sec-lbl">Reports</div>
   <div class="mgrid" style="margin-bottom:12px">
     <button class="mc-btn" onclick="goTo('o-rpt')"><span class="mc-ic">📈</span><span class="mc-t">Daily Report</span><span class="mc-s">Sales summary + print</span></button>
@@ -1088,6 +1096,316 @@ PG['o-more']=()=>Promise.resolve(`
     <button class="mc-btn" onclick="goTo('o-setup-shops')"><span class="mc-ic">🏪</span><span class="mc-t">Shops</span><span class="mc-s">Customer shops</span></button>
     <button class="mc-btn" onclick="goTo('o-setup-areas')"><span class="mc-ic">📍</span><span class="mc-t">Areas / Zones</span><span class="mc-s">Group shops by area</span></button>
   </div>`);
+
+// ── ANALYTICS HUB ────────────────────────
+PG['o-analytics']=()=>Promise.resolve(`
+  <div style="font-size:13px;color:var(--txs);margin-bottom:13px;line-height:1.6">
+    Track performance across any time period — daily, weekly, monthly, or yearly. See which shops buy most, which vans perform best, and where damage is highest.
+  </div>
+  <div class="mgrid">
+    <button class="mc-btn" onclick="goTo('o-period-report')">
+      <span class="mc-ic">📅</span>
+      <span class="mc-t">Period Report</span>
+      <span class="mc-s">Daily · Weekly · Monthly · Yearly</span>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-van-report')">
+      <span class="mc-ic">🚐</span>
+      <span class="mc-t">Van Performance</span>
+      <span class="mc-s">Sales, returns, damage per van</span>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-shop-report')">
+      <span class="mc-ic">🏪</span>
+      <span class="mc-t">Shop Report</span>
+      <span class="mc-s">Top shops, credit, buying habits</span>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-profit')">
+      <span class="mc-ic">💰</span>
+      <span class="mc-t">Profit Report</span>
+      <span class="mc-s">Revenue vs cost, margin %</span>
+    </button>
+  </div>`);
+
+// ── PERIOD REPORT ─────────────────────────
+PG['o-period-report']=async()=>{
+  const mode=W.prm||'weekly';W.prm=mode;
+  const now=new Date();
+  let fromDate,toDate=TODAY,label='';
+  if(mode==='daily'){fromDate=TODAY;label='Today — '+bsL(TODAY);}
+  else if(mode==='weekly'){const d=new Date(now);d.setDate(d.getDate()-6);fromDate=d.toISOString().split('T')[0];label='Last 7 Days';}
+  else if(mode==='monthly'){const d=new Date(now);d.setDate(1);fromDate=d.toISOString().split('T')[0];label='This Month — '+now.toLocaleString('default',{month:'long'})+' '+now.getFullYear();}
+  else if(mode==='custom'){fromDate=W.prFrom||TODAY;toDate=W.prTo||TODAY;label=bsL(fromDate)+' → '+bsL(toDate);}
+  else{const d=new Date(now);d.setMonth(0,1);fromDate=d.toISOString().split('T')[0];label='This Year — '+now.getFullYear();}
+
+  const [products,vans,orders]=await Promise.all([
+    getData('products'),getData('vans'),
+    sbG('orders',`?date=gte.${fromDate}&date=lte.${toDate}&order=date.asc`)
+  ]);
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const credit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const soldQ=dets.reduce((s,d)=>s+(+d.qty_sold||0),0);
+  const retQ=dets.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+
+  // Sales by day for chart
+  const byDay={};
+  orders.forEach(o=>{byDay[o.date]=(byDay[o.date]||0)+(+o.total||0);});
+  const dayLabels=Object.keys(byDay).sort();
+  const dayVals=dayLabels.map(d=>parseFloat((byDay[d]||0).toFixed(2)));
+
+  // Per product summary
+  const prodSummary=products.map(p=>{
+    const pd=dets.filter(d=>d.product_id==p.id);
+    const sold=pd.reduce((s,d)=>s+(+d.qty_sold||0),0);
+    const rev2=pd.reduce((s,d)=>s+(+d.line_total||0),0);
+    const dm=pd.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const ret=pd.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+    return{...p,sold,rev:rev2,dm,ret};
+  }).filter(p=>p.sold>0).sort((a,b)=>b.rev-a.rev);
+
+  // Per van summary
+  const vanSummary=vans.map(v=>{
+    const vO=orders.filter(o=>o.van_id===v.id);
+    const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));
+    const r=vO.reduce((s,o)=>s+(+o.total||0),0);
+    const dm=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const cr=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
+    const ret=vD.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+    return{...v,orders:vO.length,rev:r,dm,cr,ret};
+  }).sort((a,b)=>b.rev-a.rev);
+
+  const maxBar=Math.max(...prodSummary.map(p=>p.rev),1);
+
+  return `
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${['daily','weekly','monthly','yearly','custom'].map(m=>`<button class="btn btn-sm ${mode===m?'btn-teal':''}" onclick="W.prm='${m}';render()">${m==='daily'?'Today':m==='weekly'?'7 Days':m==='monthly'?'Month':m==='yearly'?'Year':'Custom'}</button>`).join('')}
+  </div>
+  ${mode==='custom'?`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="fg" style="flex:1;margin:0"><label class="fl">From</label><input type="date" class="fi" value="${fromDate}" onchange="W.prFrom=this.value;render()"/></div>
+    <div class="fg" style="flex:1;margin:0"><label class="fl">To</label><input type="date" class="fi" value="${toDate}" onchange="W.prTo=this.value;render()"/></div>
+  </div>`:''}
+  <div style="font-size:12px;font-weight:700;color:var(--txs);margin-bottom:10px">📅 ${label}</div>
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Total Revenue</div><div class="mv cteal">${RsC(rev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">Total Damage</div><div class="mv cred">${RsC(dam)}</div><div class="ms">${retQ} pkts returned</div></div>
+    <div class="mc"><div class="ml">On Credit</div><div class="mv camb">${RsC(credit)}</div></div>
+    <div class="mc"><div class="ml">Units Sold</div><div class="mv">${soldQ}</div></div>
+  </div>
+  ${dayLabels.length>1?`<div class="card"><div class="ct">Revenue Trend</div>
+    <div style="display:flex;align-items:flex-end;gap:3px;height:80px;padding:4px 0">
+      ${dayLabels.map((d,i)=>{const pct=dayVals[i]/Math.max(...dayVals)*100;return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="width:100%;background:var(--teal);border-radius:3px 3px 0 0;height:${Math.max(4,pct*0.7)}px;min-height:4px"></div>
+        <div style="font-size:8px;color:var(--txs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32px">${d.slice(5)}</div>
+      </div>`;}).join('')}
+    </div>
+  </div>`:''}
+  <div class="card"><div class="ct">Product Performance</div>
+    ${prodSummary.length?prodSummary.map(p=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${p.name}</div>
+        <div style="display:flex;gap:3px;margin-top:4px;align-items:center">
+          <div style="flex:1;background:var(--bd);border-radius:100px;height:5px;overflow:hidden">
+            <div style="height:100%;background:var(--teal);border-radius:100px;width:${(p.rev/maxBar*100).toFixed(0)}%"></div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--txs);margin-top:2px">Sold: ${p.sold} pkts · Returned: ${p.ret} pkts · Damage: ${RsC(p.dm)}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:14px;font-weight:800;color:var(--teal)">${RsC(p.rev)}</div>
+      </div>
+    </div>`).join(''):'<div class="empty" style="padding:12px"><div class="et">No sales in this period</div></div>'}
+  </div>
+  <div class="card"><div class="ct">Van Summary</div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Van</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Returns</th><th class="tr">Damage</th><th class="tr">Credit</th></tr></thead>
+      <tbody>${vanSummary.map(v=>`<tr>
+        <td class="fm">${v.name}</td>
+        <td class="tr">${v.orders}</td>
+        <td class="tr fm cteal">${RsC(v.rev)}</td>
+        <td class="tr">${v.ret}</td>
+        <td class="tr cred">${RsC(v.dm)}</td>
+        <td class="tr camb">${RsC(v.cr)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+};
+
+// ── VAN PERFORMANCE REPORT ────────────────
+PG['o-van-report']=async()=>{
+  const mode=W.vrm||'monthly';W.vrm=mode;
+  const now=new Date();
+  let fromDate,toDate=TODAY,label='';
+  if(mode==='weekly'){const d=new Date(now);d.setDate(d.getDate()-6);fromDate=d.toISOString().split('T')[0];label='Last 7 Days';}
+  else if(mode==='monthly'){const d=new Date(now);d.setDate(1);fromDate=d.toISOString().split('T')[0];label='This Month';}
+  else if(mode==='yearly'){const d=new Date(now);d.setMonth(0,1);fromDate=d.toISOString().split('T')[0];label='This Year';}
+  else{fromDate=W.vrFrom||TODAY;toDate=W.vrTo||TODAY;label='Custom';}
+
+  const [vans,orders]=await Promise.all([
+    getData('vans','?active=eq.true&order=name'),
+    sbG('orders',`?date=gte.${fromDate}&date=lte.${toDate}`)
+  ]);
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
+
+  const vanData=vans.map(v=>{
+    const vO=orders.filter(o=>o.van_id===v.id);
+    const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));
+    const rev=vO.reduce((s,o)=>s+(+o.total||0),0);
+    const dam=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const cr=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
+    const cash=rev-cr;
+    const soldQ=vD.reduce((s,d)=>s+(+d.qty_sold||0),0);
+    const retQ=vD.reduce((s,d)=>s+(+d.packets_returned||0)+(+d.pieces_returned||0),0);
+    const retRate=soldQ>0?((retQ/soldQ)*100).toFixed(1):0;
+    const damRate=rev>0?((dam/rev)*100).toFixed(1):0;
+    // Best day
+    const byDay={};
+    vO.forEach(o=>{byDay[o.date]=(byDay[o.date]||0)+(+o.total||0);});
+    const bestDay=Object.entries(byDay).sort((a,b)=>b[1]-a[1])[0];
+    return{...v,orders:vO.length,rev,dam,cr,cash,soldQ,retQ,retRate,damRate,bestDay};
+  }).sort((a,b)=>b.rev-a.rev);
+
+  const maxRev=Math.max(...vanData.map(v=>v.rev),1);
+
+  return `
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${['weekly','monthly','yearly','custom'].map(m=>`<button class="btn btn-sm ${mode===m?'btn-teal':''}" onclick="W.vrm='${m}';render()">${m==='weekly'?'7 Days':m==='monthly'?'Month':m==='yearly'?'Year':'Custom'}</button>`).join('')}
+  </div>
+  ${mode==='custom'?`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="fg" style="flex:1;margin:0"><label class="fl">From</label><input type="date" class="fi" value="${fromDate}" onchange="W.vrFrom=this.value;render()"/></div>
+    <div class="fg" style="flex:1;margin:0"><label class="fl">To</label><input type="date" class="fi" value="${toDate}" onchange="W.vrTo=this.value;render()"/></div>
+  </div>`:''}
+  <div style="font-size:12px;font-weight:700;color:var(--txs);margin-bottom:12px">📅 ${label}</div>
+  ${vanData.map(v=>{
+    const barW=(v.rev/maxRev*100).toFixed(0);
+    return`<div class="card">
+      <div class="chdr">
+        <div>
+          <div style="font-size:16px;font-weight:800">${v.name}</div>
+          <div style="font-size:12px;color:var(--txs)">${v.driver}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:20px;font-weight:800;color:var(--teal)">${RsC(v.rev)}</div>
+          <div style="font-size:11px;color:var(--txs)">${v.orders} orders</div>
+        </div>
+      </div>
+      <div style="background:var(--bd);border-radius:100px;height:6px;margin-bottom:12px;overflow:hidden">
+        <div style="height:100%;background:var(--teal);border-radius:100px;width:${barW}%"></div>
+      </div>
+      <div class="mg" style="margin-bottom:0">
+        <div class="mc" style="padding:10px 12px">
+          <div class="ml">Cash Collected</div>
+          <div class="mv cgrn">${RsC(v.cash)}</div>
+        </div>
+        <div class="mc" style="padding:10px 12px">
+          <div class="ml">Credit Given</div>
+          <div class="mv camb">${RsC(v.cr)}</div>
+        </div>
+        <div class="mc" style="padding:10px 12px">
+          <div class="ml">Total Damage</div>
+          <div class="mv cred">${RsC(v.dam)}</div>
+          <div class="ms">${v.damRate}% of revenue</div>
+        </div>
+        <div class="mc" style="padding:10px 12px">
+          <div class="ml">Return Rate</div>
+          <div class="mv ${parseFloat(v.retRate)>5?'cred':parseFloat(v.retRate)>2?'camb':'cgrn'}">${v.retRate}%</div>
+          <div class="ms">${v.retQ} pkts returned</div>
+        </div>
+      </div>
+      ${v.bestDay?`<div style="font-size:11px;color:var(--txs);margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">
+        🏆 Best day: <b>${bsL(v.bestDay[0])}</b> — ${RsC(v.bestDay[1])}
+      </div>`:''}
+    </div>`;
+  }).join('')}`;
+};
+
+// ── SHOP REPORT ───────────────────────────
+PG['o-shop-report']=async()=>{
+  const mode=W.srm||'monthly';W.srm=mode;
+  const now=new Date();
+  let fromDate,toDate=TODAY,label='';
+  if(mode==='weekly'){const d=new Date(now);d.setDate(d.getDate()-6);fromDate=d.toISOString().split('T')[0];label='Last 7 Days';}
+  else if(mode==='monthly'){const d=new Date(now);d.setDate(1);fromDate=d.toISOString().split('T')[0];label='This Month';}
+  else if(mode==='yearly'){const d=new Date(now);d.setMonth(0,1);fromDate=d.toISOString().split('T')[0];label='This Year';}
+  else{fromDate=W.srFrom||TODAY;toDate=W.srTo||TODAY;label='Custom';}
+
+  const [shops,vans,credits,orders]=await Promise.all([
+    getData('shops','?active=eq.true&order=name'),
+    getData('vans'),
+    getData('shop_credits'),
+    sbG('orders',`?date=gte.${fromDate}&date=lte.${toDate}`)
+  ]);
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
+
+  const shopData=shops.map(s=>{
+    const sO=orders.filter(o=>o.shop_id===s.id);
+    const sD=dets.filter(d=>sO.map(o=>o.id).includes(d.order_id));
+    const rev=sO.reduce((s2,o)=>s2+(+o.total||0),0);
+    const cr=sO.reduce((s2,o)=>s2+(+o.credit_amount||0),0);
+    const dam=sD.reduce((s2,d)=>s2+(+d.damage_deduction||0),0);
+    const soldQ=sD.reduce((s2,d)=>s2+(+d.qty_sold||0),0);
+    const balance=credits.find(c=>c.shop_id===s.id)?.balance||0;
+    const van=vans.find(v=>v.id===s.van_id);
+    return{...s,orders:sO.length,rev,cr,dam,soldQ,balance,vanName:van?.name||'—'};
+  }).filter(s=>s.orders>0).sort((a,b)=>b.rev-a.rev);
+
+  const topN=W.shopN||10;
+  const showing=shopData.slice(0,topN);
+
+  return `
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${['weekly','monthly','yearly','custom'].map(m=>`<button class="btn btn-sm ${mode===m?'btn-teal':''}" onclick="W.srm='${m}';render()">${m==='weekly'?'7 Days':m==='monthly'?'Month':m==='yearly'?'Year':'Custom'}</button>`).join('')}
+  </div>
+  ${mode==='custom'?`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="fg" style="flex:1;margin:0"><label class="fl">From</label><input type="date" class="fi" value="${fromDate}" onchange="W.srFrom=this.value;render()"/></div>
+    <div class="fg" style="flex:1;margin:0"><label class="fl">To</label><input type="date" class="fi" value="${toDate}" onchange="W.srTo=this.value;render()"/></div>
+  </div>`:''}
+  <div style="font-size:12px;font-weight:700;color:var(--txs);margin-bottom:12px">📅 ${label} · ${shopData.length} shops with orders</div>
+  <div class="mg mg4" style="margin-bottom:12px">
+    <div class="mc"><div class="ml">Total Revenue</div><div class="mv cteal">${RsC(shopData.reduce((s,x)=>s+x.rev,0))}</div></div>
+    <div class="mc"><div class="ml">Shops Ordered</div><div class="mv">${shopData.length}</div><div class="ms">of ${shops.length} total</div></div>
+    <div class="mc"><div class="ml">Outstanding Credit</div><div class="mv cred">${RsC(credits.filter(c=>c.balance>0).reduce((s,c)=>s+(+c.balance||0),0))}</div></div>
+    <div class="mc"><div class="ml">Shops Not Ordered</div><div class="mv camb">${shops.length-shopData.length}</div></div>
+  </div>
+  <div class="card">
+    <div class="chdr"><div class="ct">Top Shops by Revenue</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm ${topN===10?'bt':''}" onclick="W.shopN=10;render()">Top 10</button>
+        <button class="btn btn-sm ${topN===25?'bt':''}" onclick="W.shopN=25;render()">Top 25</button>
+        <button class="btn btn-sm ${topN===999?'bt':''}" onclick="W.shopN=999;render()">All</button>
+      </div>
+    </div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>#</th><th>Shop</th><th>Van</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th><th class="tr">Balance</th></tr></thead>
+      <tbody>${showing.map((s,i)=>`<tr>
+        <td style="font-size:11px;color:var(--txs)">${i+1}</td>
+        <td><div style="font-size:13px;font-weight:600">${s.name}</div><div style="font-size:10px;color:var(--txs)">${s.address||''}</div></td>
+        <td style="font-size:11px">${s.vanName}</td>
+        <td class="tr">${s.orders}</td>
+        <td class="tr fm cteal">${RsC(s.rev)}</td>
+        <td class="tr cred">${s.dam>0?RsC(s.dam):'—'}</td>
+        <td class="tr camb">${s.cr>0?RsC(s.cr):'—'}</td>
+        <td class="tr fm" style="color:${+s.balance>0?'var(--red)':+s.balance<0?'var(--grn)':'var(--txs)'}">${+s.balance!==0?RsC(Math.abs(+s.balance)):'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>
+  ${shops.filter(s=>!shopData.find(x=>x.id===s.id)).length>0?`
+  <div class="card">
+    <div class="ct">Shops With No Orders This Period (${shops.filter(s=>!shopData.find(x=>x.id===s.id)).length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${shops.filter(s=>!shopData.find(x=>x.id===s.id)).map(s=>`<span class="badge bm">${s.name}</span>`).join('')}
+    </div>
+  </div>`:''}`;
+};
 
 // ════════════════════════════════════════
 // SALESMAN PAGES
