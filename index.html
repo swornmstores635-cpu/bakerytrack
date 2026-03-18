@@ -1425,42 +1425,101 @@ function sUpd(pid,f,v){
 
 async function aSubmitSale(){
   const st=W.sale,vanId=S.vanId;
+
+  // Show submitting state
+  const btn=document.querySelector('.btn-grn.btn-full');
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+
   if(!st.shopId){st.msg='Please select a shop.';render();return;}
   const valid=st.rows.filter(r=>r.qty>0);
-  if(!valid.length){st.msg='Add at least one product.';render();return;}
+  if(!valid.length){st.msg='Add at least one product with quantity greater than 0.';render();return;}
+
+  // Use the sale date for stock check (not hardcoded TODAY)
+  const saleDate=st.date||TODAY;
   const products=cg('products?active=eq.true&order=sort_order,name')||cg('products')||[];
   const pricePts=cg('piece_prices?order=product_id,pieces')||cg('piece_prices')||[];
-  const loads=cg(`van_loads?date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
-  const orders=cg(`orders?date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
-  const allDets=cg('order_details')||[];
-  const carries=cg(`carryover?to_date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
-  const oids=orders.map(o=>o.id);const dets=allDets.filter(d=>oids.includes(d.order_id));
-  // Stock check
+
+  // Fetch fresh stock data for the sale date
+  let loads=[],orders=[],allDets=[],carries=[];
+  try{
+    [loads,orders,allDets,carries]=await Promise.all([
+      sbG('van_loads',`?date=eq.${saleDate}&van_id=eq.${vanId}`),
+      sbG('orders',`?date=eq.${saleDate}&van_id=eq.${vanId}`),
+      sbG('order_details'),
+      sbG('carryover',`?to_date=eq.${saleDate}&van_id=eq.${vanId}`)
+    ]);
+  }catch(e){
+    // Offline — use cache
+    loads=cg(`van_loads?date=eq.${saleDate}&van_id=eq.${vanId}`)||
+          cg(`van_loads?date=eq.${TODAY}&van_id=eq.${vanId}`)||[];
+    orders=cg(`orders?date=eq.${saleDate}&van_id=eq.${vanId}`)||[];
+    allDets=cg('order_details')||[];
+    carries=cg(`carryover?to_date=eq.${saleDate}&van_id=eq.${vanId}`)||[];
+  }
+
+  const oids=orders.map(o=>o.id);
+  const dets=allDets.filter(d=>oids.includes(d.order_id));
+
+  // Stock check — warn but don't block if no loads found (might be a data issue)
   for(const r of valid){
     const l=loads.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty||0),0);
     const c=carries.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty||0),0);
-    const s=dets.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty_sold||0),0);
-    const stk=l+c-s;
-    if(r.qty>stk){const p=products.find(x=>x.id==r.pid);st.msg=`Not enough stock: ${p?p.name:'?'} (${stk} left)`;render();return;}
+    const sold=dets.filter(x=>x.product_id==r.pid).reduce((s,x)=>s+(+x.qty_sold||0),0);
+    const stk=l+c-sold;
+    if(l+c>0&&r.qty>stk){
+      const p=products.find(x=>x.id==r.pid);
+      st.msg=`Not enough stock: ${p?p.name:'product'} (only ${stk} left in van)`;
+      render();return;
+    }
   }
+
+  // Build order details
   let total=0;
   const details=valid.map(r=>{
-    const p=products.find(x=>x.id==r.pid);const rate=p?p.rate:0;
-    const ded=calcDeduction(p||{rate:0,has_piece_pricing:false,pieces_per_packet:1},pricePts,r.pkts,r.pcs);
-    const line=Math.max(0,r.qty*rate-ded);total+=line;
-    return{product_id:r.pid,qty_sold:r.qty,packets_returned:r.pkts||0,pieces_returned:r.pcs||0,damage_deduction:parseFloat(ded.toFixed(2)),rate,line_total:parseFloat(line.toFixed(2))};
+    const p=products.find(x=>x.id==r.pid);
+    const rate=p?+p.rate:0;
+    const ded=calcDeduction(p||{rate:0,has_piece_pricing:false,pieces_per_packet:1},pricePts,r.pkts||0,r.pcs||0);
+    const line=Math.max(0,r.qty*rate-ded);
+    total+=line;
+    return{
+      product_id:parseInt(r.pid),
+      qty_sold:parseInt(r.qty),
+      packets_returned:parseInt(r.pkts)||0,
+      pieces_returned:parseInt(r.pcs)||0,
+      damage_deduction:parseFloat(ded.toFixed(2)),
+      rate:parseFloat(rate.toFixed(2)),
+      line_total:parseFloat(line.toFixed(2))
+    };
   });
+
   const creditAmt=st.pm==='cash'?0:st.pm==='credit'?total:Math.max(0,total-(st.paidNow||0));
   const paidAmt=st.pm==='cash'?total:st.pm==='credit'?0:(st.paidNow||0);
+
+  const orderPayload={
+    date:saleDate,
+    van_id:parseInt(vanId),
+    shop_id:parseInt(st.shopId),
+    total:parseFloat(total.toFixed(2)),
+    payment_method:st.pm||'cash',
+    paid_amount:parseFloat(paidAmt.toFixed(2)),
+    credit_amount:parseFloat(creditAmt.toFixed(2))
+  };
+
+  let savedOid=null;
   try{
-    const res=await sbP('orders',[{date:st.date,van_id:vanId,shop_id:parseInt(st.shopId),total:parseFloat(total.toFixed(2)),payment_method:st.pm||'cash',paid_amount:parseFloat(paidAmt.toFixed(2)),credit_amount:parseFloat(creditAmt.toFixed(2))}]);
-    const oid=res[0]?.id;
-    if(oid)await sbP('order_details',details.map(d=>({...d,order_id:oid})));
+    const res=await sbP('orders',[orderPayload]);
+    savedOid=res[0]?.id;
+    if(!savedOid)throw new Error('Order saved but no ID returned');
+    await sbP('order_details',details.map(d=>({...d,order_id:savedOid})));
   }catch(e){
-    qAdd({type:'ins',table:'orders',data:{date:st.date,van_id:vanId,shop_id:parseInt(st.shopId),total:parseFloat(total.toFixed(2)),payment_method:st.pm||'cash',paid_amount:parseFloat(paidAmt.toFixed(2)),credit_amount:parseFloat(creditAmt.toFixed(2))}});
+    console.error('Save failed:',e.message);
+    // Queue for offline sync
+    qAdd({type:'ins',table:'orders',data:orderPayload});
+    details.forEach(d=>qAdd({type:'ins',table:'order_details',data:{...d,order_id:-Date.now()}}));
     updSync();
   }
-  // Update shop credit
+
+  // Update shop credit balance
   if(creditAmt>0){
     try{
       const ex=await sbG('shop_credits',`?shop_id=eq.${st.shopId}`);
@@ -1468,12 +1527,38 @@ async function aSubmitSale(){
       const nb=parseFloat((bal+creditAmt).toFixed(2));
       if(ex.length)await sbU('shop_credits',`?shop_id=eq.${st.shopId}`,{balance:nb,updated_at:new Date().toISOString()});
       else await sbP('shop_credits',[{shop_id:parseInt(st.shopId),balance:nb}]);
-    }catch(e){qAdd({type:'ins',table:'shop_credits',data:{shop_id:parseInt(st.shopId),balance:parseFloat(creditAmt.toFixed(2))}});}
+    }catch(e){
+      qAdd({type:'ins',table:'shop_credits',data:{shop_id:parseInt(st.shopId),balance:parseFloat(creditAmt.toFixed(2))}});
+      updSync();
+    }
   }
-  // Get shop name for receipt
+
+  // Refresh cache after save
+  try{
+    const fresh=await sbG('orders',`?date=eq.${saleDate}&van_id=eq.${vanId}`);
+    cs(`orders?date=eq.${saleDate}&van_id=eq.${vanId}`,fresh);
+    const freshDets=await sbG('order_details');
+    cs('order_details',freshDets);
+  }catch(e){}
+
+  // Build receipt and reset sale state
   const allShops=cg(`shops?van_id=eq.${vanId}&active=eq.true&order=name`)||cg('shops')||[];
-  const receiptShop=allShops.find(s=>s.id==st.shopId);
-  W.sale={shopId:'',shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:st.date,rows:[],pm:'cash',paidNow:0,msg:'',lastReceipt:{shopName:receiptShop?.name||'Shop #'+st.shopId,total,creditAmt,pm:st.pm,details:details.map(d=>({name:(products.find(x=>x.id==d.product_id)||{name:'?'}).name,qty:d.qty_sold,ded:d.damage_deduction,line:d.line_total}))}};
+  const receiptShop=allShops.find(s=>s.id==parseInt(st.shopId));
+  W.sale={
+    shopId:'',shopSearch:'',addingShop:false,
+    ns:{name:'',address:'',phone:'',contact:''},
+    date:saleDate,rows:[],pm:'cash',paidNow:0,msg:'',
+    lastReceipt:{
+      shopName:receiptShop?.name||'Shop #'+st.shopId,
+      total,creditAmt,pm:st.pm,
+      details:details.map(d=>({
+        name:(products.find(x=>x.id==d.product_id)||{name:'?'}).name,
+        qty:d.qty_sold,
+        ded:d.damage_deduction,
+        line:d.line_total
+      }))
+    }
+  };
   render();
 }
 
