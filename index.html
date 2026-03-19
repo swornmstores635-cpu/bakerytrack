@@ -330,7 +330,7 @@ const sbP=(t,b)=>sb(t,'POST',b);
 const sbU=(t,q,b)=>sb(t,'PATCH',b,q);
 const sbD=(t,q)=>sb(t,'DELETE',null,q);
 
-// ── Cache & Queue ──
+// ── Cache & Queue ──────────────────────────
 const CK='bkt4_';
 const cs=(k,v)=>localStorage.setItem(CK+k,JSON.stringify({d:v,t:Date.now()}));
 const cg=k=>{const r=JSON.parse(localStorage.getItem(CK+k)||'null');return r?r.d:null;};
@@ -338,40 +338,172 @@ function qGet(){return JSON.parse(localStorage.getItem(CK+'q')||'[]');}
 function qAdd(op){const q=qGet();q.push({...op,_id:Date.now()+Math.random()});localStorage.setItem(CK+'q',JSON.stringify(q));}
 function qDel(ids){localStorage.setItem(CK+'q',JSON.stringify(qGet().filter(o=>!ids.includes(o._id))));}
 
+// ── Pending local sales (full order objects saved offline) ──
+function lsGet(){return JSON.parse(localStorage.getItem(CK+'ls')||'[]');}
+function lsAdd(order,details){
+  const ls=lsGet();
+  const lid='local_'+(Date.now()+Math.random());
+  ls.push({lid,order,details,ts:Date.now()});
+  localStorage.setItem(CK+'ls',JSON.stringify(ls));
+  return lid;
+}
+function lsDel(lids){
+  localStorage.setItem(CK+'ls',JSON.stringify(lsGet().filter(s=>!lids.includes(s.lid))));
+}
+
 let isOnline=navigator.onLine;
 window.addEventListener('online',()=>{isOnline=true;updSync();processQ();});
 window.addEventListener('offline',()=>{isOnline=false;updSync();});
 
 function updSync(){
   const el=document.getElementById('sd'),tl=document.getElementById('st');if(!el)return;
-  const q=qGet();
+  const q=qGet(),ls=lsGet();
+  const pending=q.length+ls.length;
   if(!isOnline){el.className='sd err';if(tl)tl.textContent='Offline';}
-  else if(q.length>0){el.className='sd pend';if(tl)tl.textContent=q.length+' pending';}
+  else if(pending>0){el.className='sd pend';if(tl)tl.textContent=pending+' pending';}
   else{el.className='sd';if(tl)tl.textContent='Synced';}
 }
+
 async function processQ(){
-  if(!isOnline)return;const q=qGet();if(!q.length){updSync();return;}
+  if(!isOnline)return;
+  // Process local sales first
+  const ls=lsGet();
+  const synced=[];
+  for(const s of ls){
+    try{
+      const res=await sbP('orders',[s.order]);
+      const oid=res[0]?.id;
+      if(oid){
+        await sbP('order_details',s.details.map(d=>({...d,order_id:oid})));
+        synced.push(s.lid);
+      }
+    }catch(e){console.warn('Local sale sync fail:',e.message);}
+  }
+  if(synced.length)lsDel(synced);
+  // Process general queue
+  const q=qGet();if(!q.length){updSync();return;}
   const done=[];
-  for(const op of q){try{if(op.type==='ins')await sbP(op.table,op.data);else if(op.type==='upd')await sbU(op.table,op.q,op.data);done.push(op._id);}catch(e){}}
-  if(done.length){qDel(done);await refreshCache();render();}
+  for(const op of q){
+    try{
+      if(op.type==='ins')await sbP(op.table,op.data);
+      else if(op.type==='upd')await sbU(op.table,op.q,op.data);
+      done.push(op._id);
+    }catch(e){console.warn('Queue sync fail:',e.message);}
+  }
+  if(done.length)qDel(done);
+  if(synced.length||done.length){await deepCache(S.vanId);render();}
   updSync();
 }
+
 async function manualSync(){
-  if(!isOnline){alert('Offline — all data saved locally, will sync when internet returns.');return;}
-  await processQ();await refreshCache();render();
+  if(!isOnline){
+    alert('You are offline.\n\nAll sales are saved on this phone.\nThey will automatically sync to the server when you have internet connection.\n\nTotal pending: '+(qGet().length+lsGet().length)+' items.');
+    return;
+  }
+  await processQ();
+  await deepCache(S.vanId);
+  render();
 }
-async function getData(t,q=''){
-  if(isOnline){try{const d=await sbG(t,q);cs(t+q,d);return d;}catch(e){}}
-  return cg(t+q)||[];
-}
-async function refreshCache(){
+
+// ── Deep cache — loads EVERYTHING needed for a salesman's day ──
+// Call this once at login with internet. After that, works fully offline.
+async function deepCache(vanId){
   if(!isOnline)return;
-  const tables=['products','piece_prices','vans','areas','shops','production','van_loads','orders','order_details','shop_credits','payments','settlements','carryover'];
-  await Promise.all(tables.map(async t=>{try{cs(t,await sbG(t));}catch(e){}}));
+  try{
+    const tmrwDate=tmrw();
+    // Core data
+    const [products,pricePts,vans,areas,shops,credits]=await Promise.all([
+      sbG('products','?active=eq.true&order=sort_order,name'),
+      sbG('piece_prices','?order=product_id,pieces'),
+      sbG('vans','?active=eq.true&order=name'),
+      sbG('areas'),
+      sbG('shops','?active=eq.true&order=name'),
+      sbG('shop_credits')
+    ]);
+    cs('products?active=eq.true&order=sort_order,name',products);
+    cs('products',products);
+    cs('piece_prices?order=product_id,pieces',pricePts);
+    cs('piece_prices',pricePts);
+    cs('vans',vans);cs('vans?active=eq.true&order=name',vans);
+    cs('areas',areas);
+    cs('shops?active=eq.true&order=name',shops);
+    cs('shops',shops);
+    cs('shop_credits',credits);
+    if(vanId){
+      const vShops=shops.filter(s=>s.van_id==vanId);
+      cs(`shops?van_id=eq.${vanId}&active=eq.true&order=name`,vShops);
+      const vAreas=areas.filter(a=>a.van_id==vanId);
+      cs(`areas?van_id=eq.${vanId}&order=sort_order,name`,vAreas);
+      // Load TODAY and TOMORROW loads
+      const [loads,tmrwLoads,orders,tmrwOrders,carries,settle]=await Promise.all([
+        sbG('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+        sbG('van_loads',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`),
+        sbG('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+        sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`),
+        sbG('carryover',`?to_date=eq.${tmrwDate}&van_id=eq.${vanId}`),
+        sbG('settlements',`?date=eq.${TODAY}&van_id=eq.${vanId}`)
+      ]);
+      cs(`van_loads?date=eq.${TODAY}&van_id=eq.${vanId}`,loads);
+      cs(`van_loads?date=eq.${tmrwDate}&van_id=eq.${vanId}`,tmrwLoads);
+      cs(`orders?date=eq.${TODAY}&van_id=eq.${vanId}`,orders);
+      cs(`orders?date=eq.${tmrwDate}&van_id=eq.${vanId}`,tmrwOrders);
+      cs(`carryover?to_date=eq.${tmrwDate}&van_id=eq.${vanId}`,carries);
+      cs(`settlements?date=eq.${TODAY}&van_id=eq.${vanId}`,settle);
+      // Cache order details for today's orders
+      const allOrders=[...orders,...tmrwOrders];
+      if(allOrders.length){
+        const dets=await sbG('order_details',`?order_id=in.(${allOrders.map(o=>o.id).join(',')})`);
+        cs('order_details',dets);
+      } else {
+        cs('order_details',[]);
+      }
+    }
+    localStorage.setItem(CK+'lastSync',Date.now().toString());
+    console.log('Deep cache complete');
+  }catch(e){console.warn('Deep cache error:',e.message);}
 }
+
+async function refreshCache(){await deepCache(S.vanId);}
+
+// Smart getData — tries live, falls back to cache, returns [] if nothing
+async function getData(t,q=''){
+  // First try to get from cache (for offline-first approach)
+  const cached=cg(t+q);
+  if(!isOnline){
+    // Offline — merge local pending sales into orders cache
+    if(t==='orders'&&q.includes('van_id')){
+      const ls=lsGet();
+      const base=cached||[];
+      const localOrders=ls.map(s=>({...s.order,id:'local_'+s.lid,_local:true}));
+      return [...base,...localOrders];
+    }
+    if(t==='order_details'){
+      const ls=lsGet();
+      const base=cached||[];
+      const localDets=ls.flatMap(s=>s.details.map(d=>({...d,order_id:'local_'+s.lid,_local:true})));
+      return [...base,...localDets];
+    }
+    return cached||[];
+  }
+  // Online — try live, cache result, fall back to cache on error
+  try{
+    const d=await sbG(t,q);
+    cs(t+q,d);
+    return d;
+  }catch(e){
+    return cached||[];
+  }
+}
+
+// write — saves to server if online, queues locally if offline
 async function write(t,data,uq=null){
-  if(isOnline){try{return uq?await sbU(t,uq,data):await sbP(t,data);}catch(e){}}
-  qAdd({type:uq?'upd':'ins',table:t,data,q:uq});updSync();return Array.isArray(data)?data:[data];
+  if(isOnline){
+    try{return uq?await sbU(t,uq,data):await sbP(t,data);}
+    catch(e){console.warn('Write failed, queuing:',e.message);}
+  }
+  qAdd({type:uq?'upd':'ins',table:t,data,q:uq});
+  updSync();
+  return Array.isArray(data)?data:[data];
 }
 
 // ── Session ──
@@ -406,6 +538,35 @@ function doLogin(role){
   document.getElementById('login').style.display='none';
   document.getElementById('app').classList.add('show');
   bootApp();
+  // Deep cache in background after login — this is the key for offline work
+  if(isOnline){
+    deepCache(S.vanId).then(()=>{
+      updSync();
+      // Show "ready offline" notification
+      const lastSync=localStorage.getItem(CK+'lastSync');
+      if(lastSync){
+        const min=Math.floor((Date.now()-parseInt(lastSync))/60000);
+        if(S.role==='salesman'){
+          const bar=document.createElement('div');
+          bar.style.cssText='position:fixed;top:52px;left:0;right:0;background:#15803d;color:#fff;font-size:12px;font-weight:700;text-align:center;padding:6px;z-index:999';
+          bar.textContent='✓ Data loaded — app will work offline all day';
+          document.body.appendChild(bar);
+          setTimeout(()=>bar.remove(),4000);
+        }
+      }
+    });
+  } else {
+    // Offline login — check if we have cached data
+    const lastSync=localStorage.getItem(CK+'lastSync');
+    if(lastSync){
+      const hrs=Math.floor((Date.now()-parseInt(lastSync))/3600000);
+      const bar=document.createElement('div');
+      bar.style.cssText='position:fixed;top:52px;left:0;right:0;background:var(--amb);color:#fff;font-size:12px;font-weight:700;text-align:center;padding:6px;z-index:999';
+      bar.textContent='📵 Offline mode — using data from '+hrs+'h ago. Sales will sync when connected.';
+      document.body.appendChild(bar);
+      setTimeout(()=>bar.remove(),6000);
+    }
+  }
 }
 function logout(){
   S={role:null,vanId:null};
@@ -1755,15 +1916,16 @@ PG['s-close']=async()=>{
   const tmrwOrders=await sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`);
   if(tmrwOrders.length>0)closeDate=tmrwDate;
   const orders=closeDate===TODAY?todOrders:tmrwOrders;
-  const [products,rawDets,loads,carries,settle,existReturns]=await Promise.all([
+  const [products,pricePts,rawDets,loads,carries,settle,existReturns]=await Promise.all([
     getData('products','?active=eq.true&order=sort_order,name'),
+    getData('piece_prices','?order=product_id,pieces'),
     orders.length>0?sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`):Promise.resolve([]),
-    sbG('van_loads',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
-    sbG('carryover',`?to_date=eq.${closeDate}&van_id=eq.${vanId}`),
-    sbG('settlements',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
-    sbG('van_returns',`?date=eq.${closeDate}&van_id=eq.${vanId}`)
+    getData('van_loads',`?date=eq.${closeDate}&van_id=eq.${vanId}`)||getData('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+    getData('carryover',`?to_date=eq.${closeDate}&van_id=eq.${vanId}`),
+    getData('settlements',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
+    getData('van_returns',`?date=eq.${closeDate}&van_id=eq.${vanId}`)
   ]);
-  const st=W.cl||(W.cl={cash:'',unsoldEntries:{},damageEntries:{},step:1,msg:''});
+  const st=W.cl||(W.cl={cash:'',unsoldEntries:{},step:1,msg:''});
   W.cl=st;
   const dets=rawDets;
   const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
@@ -1773,16 +1935,25 @@ PG['s-close']=async()=>{
   const existSettle=settle[0]||null;
 
   // Per product stock calculation
+  // Damage is AUTO-CALCULATED from sales records (packets_returned + pieces_returned per shop)
   const productStock=products.map(p=>{
     const loaded=loads.filter(l=>l.product_id===p.id).reduce((s,l)=>s+(+l.qty||0),0);
     const carried=carries.filter(c=>c.product_id===p.id).reduce((s,c)=>s+(+c.qty||0),0);
     const sold=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.qty_sold||0),0);
-    const damQty=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.packets_returned||0),0);
+    // Damage from sales: packets returned at shops
+    const damPkts=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.packets_returned||0),0);
+    const damPcs=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.pieces_returned||0),0);
+    const damAmt=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.damage_deduction||0),0);
     const total=loaded+carried;
-    const expectedUnsold=Math.max(0,total-sold-damQty);
+    // Expected unsold = loaded - sold - damage packets (pieces don't count as full packets)
+    const expectedUnsold=Math.max(0,total-sold-damPkts);
     const existRet=existReturns.find(r=>r.product_id===p.id);
-    return{...p,loaded,carried,total,sold,damQty,expectedUnsold,existRet};
+    return{...p,loaded,carried,total,sold,damPkts,damPcs,damAmt,expectedUnsold,existRet};
   }).filter(p=>p.total>0);
+
+  const totalDamPkts=productStock.reduce((s,p)=>s+p.damPkts,0);
+  const totalSoldPkts=productStock.reduce((s,p)=>s+p.sold,0);
+  const totalLoaded=productStock.reduce((s,p)=>s+p.total,0);
 
   // If already submitted
   if(existSettle?.salesman_declared_cash!=null){
@@ -1798,12 +1969,12 @@ PG['s-close']=async()=>{
     </div>
     <div class="card"><div class="ct">Stock Return Summary</div>
       <div class="tblw"><table class="tbl">
-        <thead><tr><th>Product</th><th class="tr">Loaded</th><th class="tr">Sold</th><th class="tr">Damage</th><th class="tr">Unsold</th><th class="tr">Accounted</th></tr></thead>
+        <thead><tr><th>Product</th><th class="tr">Loaded</th><th class="tr">Sold</th><th class="tr cred">Damage</th><th class="tr camb">Unsold</th><th class="tr">Status</th></tr></thead>
         <tbody>${productStock.map(p=>{
           const ur=existReturns.find(r=>r.product_id===p.id);
-          const u=ur?.unsold_qty||0;const dm=ur?.damage_qty||0;
-          const acc=p.sold+dm+u;const ok=acc===p.total;
-          return`<tr><td style="font-size:12px">${p.name}</td><td class="tr">${p.total}</td><td class="tr cteal">${p.sold}</td><td class="tr cred">${dm}</td><td class="tr camb">${u}</td><td class="tr"><span class="badge ${ok?'bg':'br'}">${ok?'✓ OK':'⚠ '+(p.total-acc)+' missing'}</span></td></tr>`;
+          const u=ur?.unsold_qty||0;const dm=p.damPkts;
+          const acc=p.sold+dm+u;const ok=Math.abs(p.total-acc)<=1;
+          return`<tr><td style="font-size:12px">${p.name}</td><td class="tr">${p.total}</td><td class="tr cteal">${p.sold}</td><td class="tr cred">${dm}</td><td class="tr camb">${u}</td><td class="tr"><span class="badge ${ok?'bg':'br'}">${ok?'✓ OK':'⚠ '+(p.total-acc)+' diff'}</span></td></tr>`;
         }).join('')}</tbody>
       </table></div>
     </div>
@@ -1819,7 +1990,7 @@ PG['s-close']=async()=>{
     </div>`;
   }
 
-  // STEP 1 — Stock return entry
+  // STEP 1 — Confirm damage + enter unsold
   if(st.step===1){
     return `
     ${st.msg?`<div class="al al-e">${st.msg}</div>`:''}
@@ -1830,97 +2001,112 @@ PG['s-close']=async()=>{
         <div class="vhs"><div class="vhs-v">${RsC(totalDamAmt).replace('Rs. ','')}</div><div class="vhs-l">Damage</div></div>
       </div>
     </div>
-    <div class="al al-i">📦 Count what is physically in your van right now. Enter the quantities below.</div>
+
     <div class="card">
-      <div class="ct">Stock Return — Count Your Van</div>
+      <div class="chdr"><div class="ct">🗑 Damage from Shops</div><span class="badge br">${totalDamPkts} pkts + pieces</span></div>
+      <div class="al al-i" style="margin-bottom:10px">This is calculated automatically from your sales records. Check if the physical damage in your van matches.</div>
       <div class="tblw"><table class="tbl">
-        <thead>
+        <thead><tr><th>Product</th><th class="tr">Damage Pkts</th><th class="tr">Loose Pcs</th><th class="tr">Deduction</th></tr></thead>
+        <tbody>${productStock.filter(p=>p.damPkts>0||p.damPcs>0).map(p=>`
           <tr>
-            <th>Product</th>
-            <th class="tr" style="color:var(--red)">🗑 Damage<br><span style="font-size:9px;font-weight:400">from shops</span></th>
-            <th class="tr" style="color:var(--amb)">📦 Unsold<br><span style="font-size:9px;font-weight:400">good stock</span></th>
-            <th class="tr" style="color:var(--txs)">Expected<br><span style="font-size:9px;font-weight:400">unsold</span></th>
+            <td style="font-size:12px;font-weight:600">${p.name}</td>
+            <td class="tr cred fm">${p.damPkts>0?p.damPkts:'—'}</td>
+            <td class="tr">${p.damPcs>0?p.damPcs+'pcs':'—'}</td>
+            <td class="tr cred fm">${Rs(p.damAmt)}</td>
+          </tr>`).join('')||`<tr><td colspan="4" style="text-align:center;color:var(--txs);padding:12px">No damage recorded today</td></tr>`}
+          <tr style="background:var(--sur2)">
+            <td class="fm">Total Damage</td>
+            <td class="tr cred fm">${totalDamPkts} pkts</td>
+            <td class="tr"></td>
+            <td class="tr cred fm">${Rs(totalDamAmt)}</td>
           </tr>
-        </thead>
-        <tbody>${productStock.map(p=>`
-          <tr>
-            <td><div style="font-size:12px;font-weight:600">${p.name}</div><div style="font-size:10px;color:var(--txs)">Loaded: ${p.total} · Sold: ${p.sold}</div></td>
-            <td class="tr"><input type="number" inputmode="numeric" min="0" id="dam-${p.id}"
-              style="width:58px;padding:6px 7px;border:1.5px solid var(--red-b);border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:inherit;background:var(--red-l);outline:none"
-              placeholder="0" value="${st.damageEntries[p.id]||''}"
-              onchange="W.cl.damageEntries[${p.id}]=parseInt(this.value)||0;sUpdReturn(${p.id})"/></td>
-            <td class="tr"><input type="number" inputmode="numeric" min="0" id="uns-${p.id}"
-              style="width:58px;padding:6px 7px;border:1.5px solid var(--amb-b);border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:inherit;background:var(--amb-l);outline:none"
-              placeholder="${p.expectedUnsold}" value="${st.unsoldEntries[p.id]||''}"
-              onchange="W.cl.unsoldEntries[${p.id}]=parseInt(this.value)||0;sUpdReturn(${p.id})"/></td>
-            <td class="tr"><span id="ret-exp-${p.id}" style="font-size:13px;font-weight:700;color:var(--txs)">${p.expectedUnsold}</span></td>
-          </tr>`).join('')}
         </tbody>
       </table></div>
-      <div style="margin-top:12px;padding:11px 13px;background:var(--sur2);border-radius:8px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase">Total Damage</div>
-          <div id="total-dam-qty" style="font-size:18px;font-weight:800;color:var(--red)">0 pkts</div>
+    </div>
+
+    <div class="card">
+      <div class="chdr"><div class="ct">📦 Unsold Stock — Count Your Van</div></div>
+      <div class="al al-w" style="margin-bottom:10px">Count the good unsold products physically in your van. These go back to factory stock.</div>
+      ${productStock.map(p=>{
+        const stored=st.unsoldEntries[p.id];
+        const val=stored!==undefined?stored:'';
+        const diff=stored!==undefined?stored-p.expectedUnsold:null;
+        return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">${p.name}</div>
+            <div style="font-size:11px;color:var(--txs);margin-top:2px">
+              Loaded ${p.total} → Sold ${p.sold} → Damage ${p.damPkts} pkts
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--amb);margin-top:2px">Expected unsold: ${p.expectedUnsold} pkts</div>
+            ${diff!==null?`<div style="font-size:11px;font-weight:700;margin-top:2px;color:${diff===0?'var(--grn)':diff>0?'var(--amb)':'var(--red)'}">
+              ${diff===0?'✓ Matches':'⚠ '+(diff>0?diff+' more than expected':Math.abs(diff)+' less than expected')}
+            </div>`:''}
+          </div>
+          <div style="flex-shrink:0">
+            <input type="number" inputmode="numeric" min="0" id="uns-${p.id}"
+              style="width:72px;padding:10px 8px;border:2px solid var(--amb-b);border-radius:10px;font-size:22px;font-weight:800;text-align:center;font-family:inherit;background:var(--amb-l);outline:none"
+              placeholder="${p.expectedUnsold}"
+              value="${val}"
+              onchange="W.cl.unsoldEntries[${p.id}]=parseInt(this.value)||0;sUpdReturn(${p.id})"/>
+            <div style="font-size:9px;color:var(--txs);text-align:center;margin-top:3px">pkts</div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:12px;padding:11px;background:var(--sur2);border-radius:8px;display:flex;justify-content:space-between">
+        <div><div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase">Total Unsold Entered</div>
+          <div id="total-uns-qty" style="font-size:20px;font-weight:800;color:var(--amb)">0 pkts</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase">Total Unsold</div>
-          <div id="total-uns-qty" style="font-size:18px;font-weight:800;color:var(--amb)">0 pkts</div>
+        <div style="text-align:right"><div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase">Expected Total</div>
+          <div style="font-size:20px;font-weight:800;color:var(--txs)">${productStock.reduce((s,p)=>s+p.expectedUnsold,0)} pkts</div>
         </div>
       </div>
     </div>
-    <div class="al al-w">
-      <b>Remember:</b><br>
-      🗑 <b>Damage</b> = products collected from shops (expired/broken) → will be thrown away<br>
-      📦 <b>Unsold</b> = good products left in van → will go back to factory stock
-    </div>
-    <button class="btn btn-amb btn-full" onclick="goStep2()">Next → Declare Cash</button>`;
+    <button class="btn btn-amb btn-full" style="font-size:15px" onclick="goStep2()">Next → Declare Cash</button>`;
   }
 
   // STEP 2 — Cash declaration
-  const totalDamQty=Object.values(st.damageEntries).reduce((s,v)=>s+v,0);
-  const totalUnsQty=Object.values(st.unsoldEntries).reduce((s,v)=>s+v,0);
+  const totalUnsQty=Object.values(st.unsoldEntries||{}).reduce((s,v)=>s+(+v||0),0);
   return `
   ${st.msg?`<div class="al al-e">${st.msg}</div>`:''}
   <div class="van-hdr"><div class="vh-t">🏁 Close My Day — Step 2 of 2</div><div class="vh-s">${S.driver} · ${bsL(closeDate)}</div>
     <div class="vh-stats">
-      <div class="vhs"><div class="vhs-v">${totalDamQty}</div><div class="vhs-l">Damage Pkts</div></div>
+      <div class="vhs"><div class="vhs-v">${totalDamPkts}</div><div class="vhs-l">Damage Pkts</div></div>
       <div class="vhs"><div class="vhs-v">${totalUnsQty}</div><div class="vhs-l">Unsold Pkts</div></div>
       <div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div>
     </div>
   </div>
-  <div class="card"><div class="ct">Return Summary</div>
-    <div class="settle-row"><span>Total Loaded</span><span>${productStock.reduce((s,p)=>s+p.total,0)} pkts</span></div>
-    <div class="settle-row"><span>Sold to Shops</span><span class="cteal">${productStock.reduce((s,p)=>s+p.sold,0)} pkts</span></div>
-    <div class="settle-row" style="color:var(--red)"><span>🗑 Damage Returned (to throw)</span><span class="fm">${totalDamQty} pkts</span></div>
-    <div class="settle-row" style="color:var(--amb)"><span>📦 Unsold Returned (to stock)</span><span class="fm">${totalUnsQty} pkts</span></div>
-    <div class="settle-row"><span class="fm">Total Accounted</span><span class="fm">${productStock.reduce((s,p)=>s+p.sold,0)+totalDamQty+totalUnsQty} of ${productStock.reduce((s,p)=>s+p.total,0)} pkts</span></div>
-  </div>
-  <div class="card"><div class="ct">Cash Summary</div>
-    <div style="text-align:center;margin-bottom:12px;padding:12px;background:var(--teal-l);border-radius:10px">
-      <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:4px">Expected Cash to Hand Over</div>
-      <div style="font-size:32px;font-weight:800;color:var(--teal)">${Rs(expectedCash)}</div>
-      <div style="font-size:11px;color:var(--txs);margin-top:4px">Sales ${Rs(totalSold)} − Credit ${Rs(totalCredit)}</div>
-    </div>
-    <div class="settle-row"><span>Total Sales</span><span class="fm">${Rs(totalSold)}</span></div>
+  <div class="card"><div class="ct">Full Day Summary</div>
+    <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:6px">Stock Account</div>
+    <div class="settle-row"><span>Loaded</span><span>${totalLoaded} pkts</span></div>
+    <div class="settle-row"><span>Sold to Shops</span><span class="cteal">${totalSoldPkts} pkts</span></div>
+    <div class="settle-row" style="color:var(--red)"><span>🗑 Damage (from shops)</span><span>${totalDamPkts} pkts · ${Rs(totalDamAmt)}</span></div>
+    <div class="settle-row" style="color:var(--amb)"><span>📦 Unsold (back to factory)</span><span>${totalUnsQty} pkts</span></div>
+    <div class="settle-row"><span class="fm">Accounted</span><span class="fm ${totalSoldPkts+totalDamPkts+totalUnsQty===totalLoaded?'cgrn':'cred'}">${totalSoldPkts+totalDamPkts+totalUnsQty}/${totalLoaded} pkts</span></div>
+    <div style="height:1px;background:var(--bd);margin:10px 0"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:6px">Cash Account</div>
+    <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
     <div class="settle-row"><span>Damage Deducted from Bills</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
     <div class="settle-row"><span>Credit Given to Shops</span><span class="camb">− ${Rs(totalCredit)}</span></div>
-    <div class="settle-row"><span class="fm">Cash to Hand Over</span><span class="fm cteal" style="font-size:18px">${Rs(expectedCash)}</span></div>
+    <div class="settle-row"><span class="fm">Cash to Hand Over</span><span class="fm cteal" style="font-size:16px">${Rs(expectedCash)}</span></div>
   </div>
   <div class="card"><div class="ct">Count Your Cash</div>
-    <p style="font-size:13px;color:var(--txs);margin-bottom:12px">Count all the cash you have right now. Enter the exact amount.</p>
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:6px">Expected Amount</div>
+      <div style="font-size:36px;font-weight:800;color:var(--teal)">${Rs(expectedCash)}</div>
+    </div>
     <div class="fg"><label class="fl">Actual Cash in Hand (Rs.)</label>
       <input type="number" inputmode="decimal" class="fi" min="0" step="0.01"
         value="${st.cash||''}" placeholder="${expectedCash.toFixed(2)}"
         oninput="W.cl.cash=this.value"
         style="font-size:22px;font-weight:800;text-align:center;padding:14px"/>
     </div>
-    ${st.cash?`<div style="font-size:14px;font-weight:700;padding:10px 14px;border-radius:10px;text-align:center;background:${parseFloat(st.cash)<expectedCash-1?'var(--red-l)':parseFloat(st.cash)>expectedCash+1?'var(--amb-l)':'var(--grn-l)'};color:${parseFloat(st.cash)<expectedCash-1?'var(--red)':parseFloat(st.cash)>expectedCash+1?'var(--amb)':'var(--grn)'}">
-      ${parseFloat(st.cash)<expectedCash-1?'⚠ SHORT by '+Rs(expectedCash-parseFloat(st.cash)):parseFloat(st.cash)>expectedCash+1?'You have '+Rs(parseFloat(st.cash)-expectedCash)+' extra':'✓ Amount matches!'}
+    ${st.cash?`<div style="font-size:14px;font-weight:700;padding:10px 14px;border-radius:10px;text-align:center;margin-bottom:10px;background:${parseFloat(st.cash)<expectedCash-1?'var(--red-l)':parseFloat(st.cash)>expectedCash+1?'var(--amb-l)':'var(--grn-l)'};color:${parseFloat(st.cash)<expectedCash-1?'var(--red)':parseFloat(st.cash)>expectedCash+1?'var(--amb)':'var(--grn)'}">
+      ${parseFloat(st.cash)<expectedCash-1?'⚠ SHORT by '+Rs(expectedCash-parseFloat(st.cash)):parseFloat(st.cash)>expectedCash+1?'Extra: '+Rs(parseFloat(st.cash)-expectedCash):'✓ Amount matches!'}
     </div>`:''}
   </div>
   <div style="display:flex;gap:8px">
-    <button class="btn btn-ghost" style="flex:0 0 auto" onclick="W.cl.step=1;render()">← Back</button>
-    <button class="btn btn-amb btn-full" style="font-size:15px" onclick="aCloseDay(${expectedCash.toFixed(2)},${JSON.stringify(st.damageEntries||{})},${JSON.stringify(st.unsoldEntries||{})})">🏁 Submit & Return to Factory</button>
+    <button class="btn btn-ghost" style="flex:0 0 auto;padding:13px 16px" onclick="W.cl.step=1;render()">← Back</button>
+    <button class="btn btn-amb btn-full" style="font-size:15px" onclick="aCloseDay(${expectedCash.toFixed(2)},${JSON.stringify({})},${JSON.stringify(st.unsoldEntries||{})})">🏁 Submit & Return to Factory</button>
   </div>`;
 };
 
@@ -2310,40 +2496,63 @@ async function aSubmitSale(){
   };
 
   let savedOid=null;
-  try{
-    const res=await sbP('orders',[orderPayload]);
-    savedOid=res[0]?.id;
-    if(!savedOid)throw new Error('Order saved but no ID returned');
-    await sbP('order_details',details.map(d=>({...d,order_id:savedOid})));
-  }catch(e){
-    console.error('Save failed:',e.message);
-    // Queue for offline sync
-    qAdd({type:'ins',table:'orders',data:orderPayload});
-    details.forEach(d=>qAdd({type:'ins',table:'order_details',data:{...d,order_id:-Date.now()}}));
+  let savedLocally=false;
+  if(isOnline){
+    try{
+      const res=await sbP('orders',[orderPayload]);
+      savedOid=res[0]?.id;
+      if(!savedOid)throw new Error('No ID returned');
+      await sbP('order_details',details.map(d=>({...d,order_id:savedOid})));
+    }catch(e){
+      console.warn('Online save failed, saving locally:',e.message);
+      savedLocally=true;
+    }
+  }
+  if(!savedOid){
+    // Save locally — will sync when internet available
+    lsAdd(orderPayload,details);
+    savedLocally=true;
     updSync();
+    // Update local cache so stock counts are correct offline
+    const cachedOrders=cg(`orders?date=eq.${saleDate}&van_id=eq.${vanId}`)||[];
+    cachedOrders.push({...orderPayload,id:'local_'+Date.now(),_local:true});
+    cs(`orders?date=eq.${saleDate}&van_id=eq.${vanId}`,cachedOrders);
+    const cachedDets=cg('order_details')||[];
+    details.forEach(d=>cachedDets.push({...d,order_id:'local_'+Date.now(),_local:true}));
+    cs('order_details',cachedDets);
   }
 
-  // Update shop credit balance
+  // Update shop credit balance in cache (works offline too)
   if(creditAmt>0){
-    try{
-      const ex=await sbG('shop_credits',`?shop_id=eq.${st.shopId}`);
-      const bal=ex.length?(+ex[0].balance||0):0;
-      const nb=parseFloat((bal+creditAmt).toFixed(2));
-      if(ex.length)await sbU('shop_credits',`?shop_id=eq.${st.shopId}`,{balance:nb,updated_at:new Date().toISOString()});
-      else await sbP('shop_credits',[{shop_id:parseInt(st.shopId),balance:nb}]);
-    }catch(e){
-      qAdd({type:'ins',table:'shop_credits',data:{shop_id:parseInt(st.shopId),balance:parseFloat(creditAmt.toFixed(2))}});
-      updSync();
+    const cachedCredits=cg('shop_credits')||[];
+    const idx=cachedCredits.findIndex(c=>c.shop_id==st.shopId);
+    if(idx>=0)cachedCredits[idx].balance=parseFloat((+(cachedCredits[idx].balance||0)+creditAmt).toFixed(2));
+    else cachedCredits.push({shop_id:parseInt(st.shopId),balance:parseFloat(creditAmt.toFixed(2))});
+    cs('shop_credits',cachedCredits);
+    if(isOnline&&savedOid){
+      try{
+        const ex=await sbG('shop_credits',`?shop_id=eq.${st.shopId}`);
+        const bal=ex.length?(+ex[0].balance||0):0;
+        const nb=parseFloat((bal+creditAmt).toFixed(2));
+        if(ex.length)await sbU('shop_credits',`?shop_id=eq.${st.shopId}`,{balance:nb,updated_at:new Date().toISOString()});
+        else await sbP('shop_credits',[{shop_id:parseInt(st.shopId),balance:nb}]);
+      }catch(e){qAdd({type:'ins',table:'shop_credits',data:{shop_id:parseInt(st.shopId),balance:parseFloat(creditAmt.toFixed(2))}});}
+    } else if(!isOnline){
+      qAdd({type:'upd',table:'shop_credits',q:`?shop_id=eq.${st.shopId}`,data:{balance:parseFloat((+(cg('shop_credits')||[]).find(c=>c.shop_id==st.shopId)?.balance||0)+creditAmt).toFixed(2)}});
     }
   }
 
-  // Refresh cache after save
-  try{
-    const fresh=await sbG('orders',`?date=eq.${saleDate}&van_id=eq.${vanId}`);
-    cs(`orders?date=eq.${saleDate}&van_id=eq.${vanId}`,fresh);
-    const freshDets=await sbG('order_details');
-    cs('order_details',freshDets);
-  }catch(e){}
+  // Refresh cache from server if online
+  if(isOnline&&savedOid){
+    try{
+      const fresh=await sbG('orders',`?date=eq.${saleDate}&van_id=eq.${vanId}`);
+      cs(`orders?date=eq.${saleDate}&van_id=eq.${vanId}`,fresh);
+      if(fresh.length){
+        const freshDets=await sbG('order_details',`?order_id=in.(${fresh.map(o=>o.id).join(',')})`);
+        cs('order_details',freshDets);
+      }
+    }catch(e){}
+  }
 
   // Build receipt and reset sale state
   const allShops=cg(`shops?van_id=eq.${vanId}&active=eq.true&order=name`)||cg('shops')||[];
@@ -2366,20 +2575,36 @@ async function aSubmitSale(){
   render();
 }
 
+function updDam(pid,field,val){
+  const st=W.cl;
+  if(!st.damageEntries)st.damageEntries={};
+  if(!st.damageEntries[pid])st.damageEntries[pid]={pkts:0,pcs:0};
+  st.damageEntries[pid][field]=parseInt(val)||0;
+  // Update deduction display
+  const products=cg('products?active=eq.true&order=sort_order,name')||cg('products')||[];
+  const pricePts=cg('piece_prices?order=product_id,pieces')||cg('piece_prices')||[];
+  const p=products.find(x=>x.id==pid);
+  if(p){
+    const ded=calcDeduction(p,pricePts,st.damageEntries[pid].pkts,st.damageEntries[pid].pcs);
+    const el=document.getElementById('dam-calc-'+pid);
+    if(el)el.innerHTML=ded>0?`Deduction: <b>${Rs(ded)}</b>`:'No damage entered';
+  }
+  sUpdReturn(pid);
+}
+
 function goStep2(){
   const st=W.cl;
-  // Validate — make sure entries are initialised
   if(!st.unsoldEntries)st.unsoldEntries={};
   if(!st.damageEntries)st.damageEntries={};
   st.step=2;st.msg='';render();
 }
 
 function sUpdReturn(pid){
-  // Update running totals display without full re-render
   const st=W.cl;
   if(!st.damageEntries)st.damageEntries={};
   if(!st.unsoldEntries)st.unsoldEntries={};
-  const dam=Object.values(st.damageEntries).reduce((s,v)=>s+(+v||0),0);
+  // Count total damage packets (full pkts only for quantity tracking)
+  const dam=Object.values(st.damageEntries).reduce((s,v)=>s+(typeof v==='object'?v.pkts||0:+v||0),0);
   const uns=Object.values(st.unsoldEntries).reduce((s,v)=>s+(+v||0),0);
   const dEl=document.getElementById('total-dam-qty');
   const uEl=document.getElementById('total-uns-qty');
@@ -2404,14 +2629,14 @@ async function aCloseDay(expectedCash,damageEntries,unsoldEntries){
   const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
   const totalDamAmt=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
   const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
-  const totalDamQty=Object.values(damageEntries||{}).reduce((s,v)=>s+(+v||0),0);
+  const totalDamQty=Object.values(damageEntries||{}).reduce((s,v)=>s+(typeof v==="object"?v.pkts||0:+v||0),0);
   const totalUnsoldQty=Object.values(unsoldEntries||{}).reduce((s,v)=>s+(+v||0),0);
 
   // Save van_returns per product
   const de=damageEntries||{};const ue=unsoldEntries||{};
   const allPids=new Set([...Object.keys(de),...Object.keys(ue)]);
   for(const pid of allPids){
-    const dq=parseInt(de[pid])||0;const uq=parseInt(ue[pid])||0;
+    const dqObj=de[pid]||{};const dq=typeof dqObj==="object"?(dqObj.pkts||0):(parseInt(dqObj)||0);const uq=parseInt(ue[pid])||0;
     if(!dq&&!uq)continue;
     try{
       const ex=await sbG('van_returns',`?date=eq.${useDate}&van_id=eq.${vanId}&product_id=eq.${pid}`);
