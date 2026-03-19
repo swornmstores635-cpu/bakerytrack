@@ -1000,32 +1000,116 @@ PG['o-prod']=async()=>{
 
 // ── OWNER: VAN LOADING ────────────────────
 PG['o-load']=async()=>{
-  const [vans,products,loads,production]=await Promise.all([getData('vans','?active=eq.true&order=name'),getData('products','?active=eq.true&order=sort_order,name'),getData('van_loads'),getData('production')]);
-  const st=W.vl||(W.vl={date:tmrw(),vanId:'',pid:'',qty:'',msg:''});
+  const [vans,products,loads,production,bills]=await Promise.all([
+    getData('vans','?active=eq.true&order=name'),
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('van_loads'),
+    getData('production'),
+    isOnline?sbG('loading_bills',`?date=eq.${W.vl?.date||tmrw()}&order=created_at.desc`).catch(()=>[]):Promise.resolve([])
+  ]);
+  const st=W.vl||(W.vl={date:tmrw(),vanId:'',pid:'',qty:'',crates:'',msg:''});
   const tp={};production.filter(p=>p.date<=st.date).forEach(p=>{tp[p.product_id]=(tp[p.product_id]||0)+(+p.qty||0);});
   const tl=loads.filter(l=>l.date===st.date);
   const alreadyLoaded={};tl.forEach(l=>{alreadyLoaded[l.product_id]=(alreadyLoaded[l.product_id]||0)+(+l.qty||0);});
+
+  // Group loads by van
+  const vanLoads=vans.map(v=>{
+    const vLoads=tl.filter(l=>l.van_id===v.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const totalPkts=vLoads.reduce((s,l)=>s+(+l.qty||0),0);
+    const totalCrates=vLoads.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0);
+    const bill=bills.find(b=>b.van_id===v.id);
+    return{...v,loads:vLoads,totalPkts,totalCrates,bill};
+  }).filter(v=>v.loads.length>0||st.vanId==v.id);
+
   return `
   ${st.msg?al('s',st.msg):''}
   <div class="al al-i">📅 Evening loading for tomorrow's delivery. Date is pre-set to tomorrow.</div>
-  <div class="card"><div class="ct">Load Van</div>
-    <div class="fg"><label class="fl">Delivery Date (usually tomorrow)</label><input type="date" class="fi" value="${st.date}" onchange="W.vl.date=this.value;render()"/><div class="dh">BS: ${bsL(st.date)}</div></div>
-    <div class="fg"><label class="fl">Van</label><select class="fi" onchange="W.vl.vanId=this.value"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name} — ${v.driver}</option>`).join('')}</select></div>
-    <div class="fg"><label class="fl">Product</label><select class="fi" onchange="W.vl.pid=this.value;render()"><option value="">— Select product —</option>${products.map(p=>{const avail=(tp[p.id]||0)-(alreadyLoaded[p.id]||0);return`<option value="${p.id}" ${st.pid==p.id?'selected':''}>${p.name} (available: ${avail})</option>`;}).join('')}</select></div>
-    <div class="fg"><label class="fl">Quantity (packets)</label><input type="number" inputmode="numeric" class="fi" min="1" value="${st.qty}" placeholder="Qty" oninput="W.vl.qty=this.value"/></div>
-    <button class="btn btn-teal btn-full" onclick="aLoad()">Load to Van</button>
+
+  <div class="card"><div class="ct">Add Product to Van</div>
+    <div class="fg"><label class="fl">Delivery Date</label>
+      <input type="date" class="fi" value="${st.date}" onchange="W.vl.date=this.value;render()"/>
+      <div class="dh">BS: ${bsL(st.date)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fg" style="margin:0"><label class="fl">Van</label>
+        <select class="fi" onchange="W.vl.vanId=this.value">
+          <option value="">— Select van —</option>
+          ${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fg" style="margin:0"><label class="fl">Product</label>
+        <select class="fi" onchange="W.vl.pid=this.value">
+          <option value="">— Select —</option>
+          ${products.map(p=>{const avail=(tp[p.id]||0)-(alreadyLoaded[p.id]||0);return`<option value="${p.id}" ${st.pid==p.id?'selected':''}>${p.name} (${avail} avail)</option>`;}).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fg" style="margin:0"><label class="fl">Quantity (packets) *</label>
+        <input type="number" inputmode="numeric" class="fi" min="1" value="${st.qty}" placeholder="e.g. 200" oninput="W.vl.qty=this.value"/>
+      </div>
+      <div class="fg" style="margin:0"><label class="fl">Crates (optional)</label>
+        <input type="number" inputmode="numeric" class="fi" min="0" value="${st.crates}" placeholder="e.g. 5" oninput="W.vl.crates=this.value"/>
+      </div>
+    </div>
+    <button class="btn btn-teal btn-full" onclick="aLoad()">＋ Add to Van</button>
   </div>
-  <div class="card"><div class="ct">Loads for ${bsL(st.date)}</div>
-    ${tl.length?`<div class="tblw"><table class="tbl"><thead><tr><th>Van</th><th>Product</th><th class="tr">Qty</th><th></th></tr></thead><tbody>
-    ${tl.map(l=>{const v=vans.find(x=>x.id==l.van_id),p=products.find(x=>x.id==l.product_id);return`<tr><td>${v?v.name:'?'}</td><td>${p?p.name:'?'}</td><td class="tr">${l.qty}</td><td class="tr"><button class="btn-ico" onclick="delIt('van_loads','?id=eq.${l.id}')">🗑</button></td></tr>`;}).join('')}
-    </tbody></table></div>
-    <div style="margin-top:12px;padding:10px 12px;background:var(--sur2);border-radius:8px">
-      <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:7px">Van Totals</div>
-      ${vans.map(v=>{const vT=tl.filter(l=>l.van_id===v.id).reduce((s,l)=>s+(+l.qty||0),0);const vP=tl.filter(l=>l.van_id===v.id).length;return vT>0?`<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--bd)"><span class="fm">${v.name}</span><span>${vP} products · <b>${vT} pkts</b></span></div>`:'';}).join('')}
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;font-weight:700"><span>Grand Total</span><span>${tl.reduce((s,l)=>s+(+l.qty||0),0)} packets</span></div>
-    </div>`
-    :'<div class="empty" style="padding:14px"><div class="et">No loads for this date</div></div>'}
-  </div>`;
+
+  ${tl.length===0?`<div class="empty"><div class="ei">🚐</div><div class="et">No loads for ${bsL(st.date)}</div><div class="es">Select a van and product above to start loading</div></div>`:''}
+
+  ${vans.filter(v=>tl.some(l=>l.van_id===v.id)).map(van=>{
+    const vL=tl.filter(l=>l.van_id===van.id);
+    const totalPkts=vL.reduce((s,l)=>s+(+l.qty||0),0);
+    const totalCrates=vL.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0);
+    const bill=bills.find(b=>b.van_id===van.id);
+    const billNo=bill?.bill_no||'(not issued)';
+    let sn=1;
+    return`<div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:800">${van.name}</div>
+          <div style="font-size:12px;color:var(--txs)">${van.driver}</div>
+          ${bill?`<div style="font-size:11px;font-weight:700;color:var(--teal);margin-top:3px">📋 Bill No: ${billNo}</div>`:''}
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          ${!bill?`<button class="btn btn-teal btn-sm" onclick="aIssueBill(${van.id},'${st.date}',${totalPkts},${totalCrates})">📋 Issue Bill</button>`:''}
+          <button class="btn btn-sm" onclick="printLoadBill(${van.id},'${st.date}')">🖨 Print</button>
+        </div>
+      </div>
+      <div class="tblw"><table class="tbl">
+        <thead><tr><th style="width:28px">S.N.</th><th>Product</th><th class="tr">Packets</th><th class="tr">Crates</th><th></th></tr></thead>
+        <tbody>${vL.map(l=>{const p=products.find(x=>x.id==l.product_id);return`<tr>
+          <td style="font-size:11px;color:var(--txs);font-weight:700">${sn++}</td>
+          <td style="font-size:13px;font-weight:600">${p?p.name:'?'}</td>
+          <td class="tr fm">${l.qty}</td>
+          <td class="tr">${l.crates?`<span class="badge bt">${l.crates}</span>`:'<span style="color:var(--txt);font-size:11px">—</span>'}</td>
+          <td class="tr"><button class="btn-ico" onclick="delIt('van_loads','?id=eq.${l.id}')">🗑</button></td>
+        </tr>`;}).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--teal-l);font-weight:700">
+            <td colspan="2" style="font-size:13px;font-weight:800;color:var(--teal)">TOTAL — ${van.name}</td>
+            <td class="tr" style="font-size:15px;font-weight:800;color:var(--teal)">${totalPkts}</td>
+            <td class="tr" style="color:var(--teal)">${totalCrates>0?totalCrates+' crates':'—'}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table></div>
+    </div>`;
+  }).join('')}
+
+  ${tl.length>0?`<div class="card" style="background:var(--teal-l);border:1.5px solid var(--teal-b)">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--teal)">Grand Total — All Vans</div>
+        <div style="font-size:11px;color:var(--teal);margin-top:2px">${bsL(st.date)} · ${vans.filter(v=>tl.some(l=>l.van_id===v.id)).length} vans loaded</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:800;color:var(--teal)">${tl.reduce((s,l)=>s+(+l.qty||0),0)} packets</div>
+        ${tl.some(l=>l.crates)?`<div style="font-size:13px;font-weight:700;color:var(--teal)">${tl.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0)} crates total</div>`:''}
+      </div>
+    </div>
+  </div>`:''}`;
 };
 
 // ── OWNER: VAN STOCK ──────────────────────
@@ -2756,7 +2840,90 @@ async function aEditShop(id){const s=(await sbG('shops',`?id=eq.${id}`))[0];if(s
 async function aDelShop(id){if(!confirm('Delete this shop? This cannot be undone.'))return;try{await sbD('shop_credits',`?shop_id=eq.${id}`);await sbD('shops',`?id=eq.${id}`);W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:'Shop deleted successfully.'};render();}catch(e){try{await sbU('shops',`?id=eq.${id}`,{active:false});}catch(e2){alert('Delete failed: '+e2.message);return;}W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:'Shop hidden (has order history).'};render();}}
 
 async function aProd(){const st=W.pr;if(!st.pid||!st.qty){st.msg='Select product and enter qty.';render();return;}await write('production',{date:st.date,product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.pr={date:st.date,pid:'',qty:'',msg:'✓ Production logged.'};render();}
-async function aLoad(){const st=W.vl;if(!st.vanId||!st.pid||!st.qty){st.msg='Fill all fields.';render();return;}await write('van_loads',{date:st.date,van_id:parseInt(st.vanId),product_id:parseInt(st.pid),qty:parseInt(st.qty)});W.vl={date:st.date,vanId:st.vanId,pid:'',qty:'',msg:'✓ Van loaded.'};render();}
+async function aLoad(){
+  const st=W.vl;
+  if(!st.vanId||!st.pid||!st.qty){st.msg='Select van, product and enter quantity.';render();return;}
+  const payload={
+    date:st.date,
+    van_id:parseInt(st.vanId),
+    product_id:parseInt(st.pid),
+    qty:parseInt(st.qty)
+  };
+  if(st.crates&&parseInt(st.crates)>0)payload.crates=parseInt(st.crates);
+  await write('van_loads',payload);
+  W.vl={date:st.date,vanId:st.vanId,pid:'',qty:'',crates:'',msg:'✓ Added to van.'};
+  render();
+}
+
+async function aIssueBill(vanId,date,totalPkts,totalCrates){
+  // Generate bill number: LB-YYYYMMDD-VAN-NNN
+  const dateStr=date.replace(/-/g,'');
+  const existing=await sbG('loading_bills',`?date=eq.${date}&order=created_at.desc`).catch(()=>[]);
+  const seq=String(existing.length+1).padStart(3,'0');
+  const vans=cg('vans')||[];
+  const van=vans.find(v=>v.id==vanId);
+  const vanCode=(van?.name||'VAN').replace(/[^A-Z0-9]/gi,'').toUpperCase().slice(0,3);
+  const billNo=`LB-${dateStr}-${vanCode}-${seq}`;
+  try{
+    await sbP('loading_bills',[{bill_no:billNo,date,van_id:parseInt(vanId),total_packets:totalPkts,total_crates:totalCrates}]);
+    W.vl.msg=`✓ Bill issued: ${billNo}`;render();
+    // Auto-print
+    setTimeout(()=>printLoadBill(vanId,date),300);
+  }catch(e){alert('Failed to issue bill: '+e.message);}
+}
+
+async function printLoadBill(vanId,date){
+  const [vans,products,loads,bills]=await Promise.all([
+    getData('vans'),getData('products'),
+    sbG('van_loads',`?date=eq.${date}&van_id=eq.${vanId}`),
+    sbG('loading_bills',`?date=eq.${date}&van_id=eq.${vanId}`).catch(()=>[])
+  ]);
+  const van=vans.find(v=>v.id==vanId);
+  const bill=bills[0];
+  const totalPkts=loads.reduce((s,l)=>s+(+l.qty||0),0);
+  const totalCrates=loads.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0);
+  let sn=1;
+  const html=`<!DOCTYPE html><html><head><title>Loading Bill</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;padding:20px;max-width:400px;margin:0 auto}
+    h2{font-size:16px;font-weight:800;margin:0}
+    .meta{font-size:11px;color:#666;margin:4px 0 12px}
+    .bill-no{font-size:14px;font-weight:800;color:#0f766e;border:2px solid #0f766e;display:inline-block;padding:4px 12px;border-radius:6px;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th{background:#f5f5f5;padding:6px 8px;text-align:left;border:1px solid #ddd;font-size:10px;text-transform:uppercase}
+    td{padding:7px 8px;border:1px solid #ddd;vertical-align:middle}
+    .tr{text-align:right}
+    .total-row{background:#f0fdf4;font-weight:700}
+    .footer{margin-top:16px;display:flex;justify-content:space-between;font-size:11px;border-top:1px solid #ddd;padding-top:10px}
+    .sig{margin-top:24px;display:flex;justify-content:space-between}
+    .sig-line{border-top:1px solid #333;width:40%;text-align:center;padding-top:4px;font-size:10px}
+    @media print{body{padding:0}}
+  </style></head><body>
+  <h2>🥐 BakeryTrack Nepal</h2>
+  <div class="meta">Van Loading Bill · ${bsL(date)} (${date})</div>
+  ${bill?`<div class="bill-no">📋 Bill No: ${bill.bill_no}</div>`:'<div class="bill-no">📋 DRAFT</div>'}
+  <div style="margin-bottom:10px;font-size:13px"><b>Van:</b> ${van?.name||'?'} &nbsp;|&nbsp; <b>Driver:</b> ${van?.driver||'?'}</div>
+  <table>
+    <thead><tr><th>S.N.</th><th>Product</th><th class="tr">Packets</th><th class="tr">Crates</th></tr></thead>
+    <tbody>
+      ${loads.map(l=>{const p=products.find(x=>x.id==l.product_id);return`<tr><td>${sn++}</td><td>${p?p.name:'?'}</td><td class="tr">${l.qty}</td><td class="tr">${l.crates||'—'}</td></tr>`;}).join('')}
+      <tr class="total-row"><td colspan="2">TOTAL</td><td class="tr">${totalPkts} pkts</td><td class="tr">${totalCrates>0?totalCrates+' crates':'—'}</td></tr>
+    </tbody>
+  </table>
+  <div class="footer">
+    <span>Loaded: ${new Date().toLocaleTimeString()}</span>
+    <span>Products: ${loads.length}</span>
+  </div>
+  <div class="sig">
+    <div class="sig-line">Loaded By</div>
+    <div class="sig-line">Driver / Salesman</div>
+  </div>
+  </body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  w.print();
+}
 async function aCarry(meta){const st=W.co;const prev=new Date(st.date);prev.setDate(prev.getDate()-1);const ps=prev.toISOString().split('T')[0];for(const m of meta){const qty=parseInt(document.getElementById('co-'+m.idx)?.value||0);if(!qty)continue;if(m.exId)await sbU('carryover',`?id=eq.${m.exId}`,{qty});else await sbP('carryover',[{from_date:ps,to_date:st.date,van_id:parseInt(st.vanId),product_id:m.pid,qty}]);}W.co.msg='✓ Carryover saved.';render();}
 async function aPayment(){const st=W.cr;if(!st.sid||!st.amt){st.msg='Select shop and enter amount.';render();return;}await write('payments',{date:TODAY,shop_id:parseInt(st.sid),amount:parseFloat(st.amt),note:st.note||null,recorded_by:'owner'});try{const ex=await sbG('shop_credits',`?shop_id=eq.${st.sid}`);const bal=ex.length?(+ex[0].balance||0):0;const nb=parseFloat((bal-parseFloat(st.amt)).toFixed(2));if(ex.length)await sbU('shop_credits',`?shop_id=eq.${st.sid}`,{balance:nb,updated_at:new Date().toISOString()});else await sbP('shop_credits',[{shop_id:parseInt(st.sid),balance:nb}]);}catch(e){}W.cr={sid:'',amt:'',note:'',msg:'✓ Payment recorded.'};render();}
 async function delIt(table,query){if(!confirm('Delete this?'))return;await sbD(table,query);render();}
