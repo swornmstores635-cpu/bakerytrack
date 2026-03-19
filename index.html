@@ -576,66 +576,116 @@ PG['o-dash']=async()=>{
 // ── OWNER: SETTLEMENT ────────────────────
 PG['o-settle']=async()=>{
   const settleDate=W.sd||TODAY;W.sd=settleDate;
-  const [vans,orders,dets,settlements]=await Promise.all([
+  const [products,vans,orders,allDets,settlements,allReturns,allLoads]=await Promise.all([
+    getData('products','?active=eq.true&order=sort_order,name'),
     getData('vans','?active=eq.true&order=name'),
-    getData('orders',`?date=eq.${settleDate}`),
-    getData('order_details'),
-    getData('settlements',`?date=eq.${settleDate}`)
+    sbG('orders',`?date=eq.${settleDate}`),
+    sbG('order_details'),
+    sbG('settlements',`?date=eq.${settleDate}`),
+    sbG('van_returns',`?date=eq.${settleDate}`),
+    sbG('van_loads',`?date=eq.${settleDate}`)
   ]);
-  const st=W.se||(W.se={vanId:'',cash:'',note:'',msg:''});
-  const oids=orders.map(o=>o.id);const allDets=dets.filter(d=>oids.includes(d.order_id));
-  let h=st.msg?al('s',st.msg):'';
-  h+=`<div class="fg"><input type="date" class="fi" value="${settleDate}" onchange="W.sd=this.value;render()"/><div class="dh">BS: ${bsL(settleDate)} · Settlements for this date</div></div>`;
+  const st=W.se||(W.se={cash:'',msg:''});
+  let h=st.msg?`<div class="al al-s">${st.msg}</div>`:'';
+  h+=`<div class="fg"><input type="date" class="fi" value="${settleDate}" onchange="W.sd=this.value;render()"/><div class="dh">BS: ${bsL(settleDate)} — Settlement for this date</div></div>`;
+
   vans.forEach(van=>{
     const vO=orders.filter(o=>o.van_id===van.id);
-    const vD=allDets.filter(d=>vO.map(o=>o.id).includes(d.order_id));
+    const oids=vO.map(o=>o.id);
+    const vD=allDets.filter(d=>oids.includes(d.order_id));
+    const vR=allReturns.filter(r=>r.van_id===van.id);
+    const vL=allLoads.filter(l=>l.van_id===van.id);
     const totalSold=vO.reduce((s,o)=>s+(+o.total||0),0);
-    const totalDam=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const totalDamAmt=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
     const totalCredit=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
     const expectedCash=totalSold-totalCredit;
     const settle=settlements.find(s=>s.van_id===van.id);
     const status=settle?.status||'pending';
+
+    // Stock account per product
+    const stockRows=products.map(p=>{
+      const loaded=vL.filter(l=>l.product_id===p.id).reduce((s,l)=>s+(+l.qty||0),0);
+      if(!loaded)return null;
+      const sold=vD.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.qty_sold||0),0);
+      const damQty=vR.filter(r=>r.product_id===p.id).reduce((s,r)=>s+(+r.damage_qty||0),0);
+      const unsoldQty=vR.filter(r=>r.product_id===p.id).reduce((s,r)=>s+(+r.unsold_qty||0),0);
+      const accounted=sold+damQty+unsoldQty;
+      const diff=loaded-accounted;
+      return{name:p.name,loaded,sold,damQty,unsoldQty,accounted,diff};
+    }).filter(Boolean);
+
+    const totalLoaded=stockRows.reduce((s,r)=>s+r.loaded,0);
+    const totalSoldQ=stockRows.reduce((s,r)=>s+r.sold,0);
+    const totalDamQ=stockRows.reduce((s,r)=>s+r.damQty,0);
+    const totalUnsQ=stockRows.reduce((s,r)=>s+r.unsoldQty,0);
+    const totalAcc=stockRows.reduce((s,r)=>s+r.accounted,0);
+    const totalMissing=totalLoaded-totalAcc;
+
     if(status==='confirmed'||status==='shortfall'){
       const diff=+(settle.difference||0);
       h+=`<div class="settle-card ${diff<0?'settle-short':'settle-done'}">
-        <div class="settle-title">${van.name} — ${van.driver}</div>
+        <div class="settle-title">${van.name} — ${van.driver} <span class="badge ${diff<0?'br':'bg'}" style="margin-left:8px">${diff<0?'⚠ Shortfall':'✓ Confirmed'}</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:10px 0 6px">Stock Account</div>
+        <div class="settle-row"><span>Loaded</span><span>${totalLoaded} pkts</span></div>
+        <div class="settle-row"><span>Sold to Shops</span><span class="cteal">${totalSoldQ} pkts</span></div>
+        <div class="settle-row" style="color:var(--red)"><span>🗑 Damage Returned</span><span>${totalDamQ} pkts</span></div>
+        <div class="settle-row" style="color:var(--amb)"><span>📦 Unsold Returned</span><span>${totalUnsQ} pkts</span></div>
+        <div class="settle-row"><span class="fm">Total Accounted</span><span class="fm ${totalMissing>0?'cred':''}">${totalAcc}/${totalLoaded} pkts${totalMissing>0?' (⚠ '+totalMissing+' missing)':' ✓'}</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:10px 0 6px">Cash Account</div>
         <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
-        <div class="settle-row"><span>Credit Given</span><span>− ${Rs(totalCredit)}</span></div>
+        <div class="settle-row"><span>Damage Deducted</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
+        <div class="settle-row"><span>Credit Given</span><span class="camb">− ${Rs(totalCredit)}</span></div>
         <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
         <div class="settle-row"><span>Salesman Declared</span><span>${Rs(settle.salesman_declared_cash)}</span></div>
         <div class="settle-row"><span>Actual Received</span><span>${Rs(settle.actual_cash_received)}</span></div>
-        <div class="settle-row"><span>${diff<0?'⚠ Shortfall':'✓ Match/Surplus'}</span><span class="fm" style="color:${diff<0?'var(--red)':'var(--grn)'}">${Rs(Math.abs(diff))} ${diff<0?'short':'surplus'}</span></div>
-        <span class="badge ${diff<0?'br':'bg'}" style="margin-top:8px">${diff<0?'Shortfall':'Confirmed ✓'}</span>
+        <div class="settle-row"><span class="fm">${diff<0?'⚠ Shortfall':'✓ Matched'}</span><span class="fm" style="color:${diff<0?'var(--red)':'var(--grn)'}">${Rs(Math.abs(diff))} ${diff<0?'short':'surplus'}</span></div>
+      </div>`;
+    } else if(settle?.salesman_declared_cash!=null){
+      // Salesman submitted — waiting for owner
+      h+=`<div class="settle-card settle-pending">
+        <div class="settle-title">${van.name} — ${van.driver} <span class="badge ba" style="margin-left:8px">🏁 Salesman Submitted</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:10px 0 6px">Stock Account</div>
+        ${stockRows.length>0?`<div class="tblw"><table class="tbl" style="margin-bottom:10px">
+          <thead><tr><th>Product</th><th class="tr">Loaded</th><th class="tr">Sold</th><th class="tr cred">Damage</th><th class="tr camb">Unsold</th><th class="tr">Status</th></tr></thead>
+          <tbody>${stockRows.map(r=>`<tr>
+            <td style="font-size:12px">${r.name}</td>
+            <td class="tr">${r.loaded}</td>
+            <td class="tr cteal">${r.sold}</td>
+            <td class="tr cred">${r.damQty}</td>
+            <td class="tr camb">${r.unsoldQty}</td>
+            <td class="tr"><span class="badge ${r.diff===0?'bg':r.diff>0?'br':'ba'}">${r.diff===0?'✓ OK':r.diff>0?r.diff+' missing':Math.abs(r.diff)+' extra'}</span></td>
+          </tr>`).join('')}
+          <tr style="background:var(--sur2);font-weight:700">
+            <td>TOTAL</td><td class="tr">${totalLoaded}</td><td class="tr cteal">${totalSoldQ}</td>
+            <td class="tr cred">${totalDamQ}</td><td class="tr camb">${totalUnsQ}</td>
+            <td class="tr"><span class="badge ${totalMissing===0?'bg':'br'}">${totalMissing===0?'✓ All OK':'⚠ '+totalMissing+' missing'}</span></td>
+          </tr></tbody>
+        </table></div>`:'<div style="font-size:13px;color:var(--txs);margin-bottom:10px">No return data submitted</div>'}
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:6px 0">Cash Account</div>
+        <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+        <div class="settle-row"><span>Damage Deducted</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
+        <div class="settle-row"><span>Credit Given</span><span class="camb">− ${Rs(totalCredit)}</span></div>
+        <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+        <div class="settle-row"><span>Salesman Declared</span><span class="fm">${Rs(settle.salesman_declared_cash)}</span></div>
+        <hr style="border:none;border-top:1px solid var(--bd);margin:10px 0">
+        <div class="fg"><label class="fl">Actual Cash Received (Rs.)</label>
+          <input type="number" inputmode="decimal" class="fi" id="cash-${van.id}" min="0" step="0.01" placeholder="${expectedCash.toFixed(2)}"/>
+        </div>
+        <button class="btn btn-grn btn-full" onclick="aConfirmSettle(${van.id},${settle.id},${expectedCash.toFixed(2)})">✓ Confirm Settlement</button>
       </div>`;
     } else {
-      // Salesman declared?
-      const declared=settle?.salesman_declared_cash;
-      if(declared!=null){
-        h+=`<div class="settle-card settle-pending">
-          <div class="settle-title">${van.name} — ${van.driver} <span class="badge ba" style="margin-left:8px">Salesman Declared</span></div>
+      h+=`<div class="settle-card settle-pending">
+        <div class="settle-title">${van.name} — ${van.driver} <span class="badge bm" style="margin-left:8px">Pending</span></div>
+        ${vO.length>0?`
           <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
-          <div class="settle-row"><span>Credit Given</span><span>− ${Rs(totalCredit)}</span></div>
+          <div class="settle-row"><span>Damage Deducted</span><span class="cred">${Rs(totalDamAmt)}</span></div>
+          <div class="settle-row"><span>Credit Given</span><span class="camb">${Rs(totalCredit)}</span></div>
           <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
-          <div class="settle-row"><span>Salesman Declared</span><span class="fm">${Rs(declared)}</span></div>
-          <div class="settle-row"><span>Damage Deducted</span><span>${Rs(totalDam)}</span></div>
-          <hr style="border:none;border-top:1px solid var(--bd);margin:10px 0">
-          <div class="fg"><label class="fl">Actual Cash Received (Rs.)</label><input type="number" inputmode="decimal" class="fi" id="cash-${van.id}" min="0" step="0.01" placeholder="${expectedCash.toFixed(2)}" value="${st.vanId==van.id?st.cash:''}"/></div>
-          <button class="btn btn-grn btn-full" onclick="aConfirmSettle(${van.id},${settle.id},${expectedCash.toFixed(2)})">✓ Confirm Settlement</button>
-        </div>`;
-      } else {
-        // Not yet declared
-        const hasOrders=vO.length>0;
-        h+=`<div class="settle-card settle-pending">
-          <div class="settle-title">${van.name} — ${van.driver}</div>
-          ${hasOrders?`
-          <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
-          <div class="settle-row"><span>Credit Given</span><span>− ${Rs(totalCredit)}</span></div>
-          <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
-          <div class="settle-row"><span>Damage Deducted</span><span>${Rs(totalDam)}</span></div>
-          <div style="font-size:12px;color:var(--txs);margin-top:10px">Waiting for salesman to close their day...</div>
-          `:`<div style="font-size:13px;color:var(--txs)">No orders recorded today</div>`}
-        </div>`;
-      }
+          <div style="font-size:12px;color:var(--txs);margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">
+            ⏳ Waiting for salesman to close their day and submit returns...
+          </div>`
+        :`<div style="font-size:13px;color:var(--txs)">No orders recorded for this date</div>`}
+      </div>`;
     }
   });
   return h;
@@ -1699,69 +1749,178 @@ PG['s-history']=async()=>{
 // ── SALESMAN: CLOSE MY DAY ────────────────
 PG['s-close']=async()=>{
   const vanId=S.vanId;
-  // Detect which date has orders — today or tomorrow
   const tmrwDate=tmrw();
   let closeDate=TODAY;
   const todOrders=await sbG('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
   const tmrwOrders=await sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`);
   if(tmrwOrders.length>0)closeDate=tmrwDate;
   const orders=closeDate===TODAY?todOrders:tmrwOrders;
-  const [rawDets,loads,carries,settle]=await Promise.all([
+  const [products,rawDets,loads,carries,settle,existReturns]=await Promise.all([
+    getData('products','?active=eq.true&order=sort_order,name'),
     orders.length>0?sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`):Promise.resolve([]),
-    getData('van_loads',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
-    getData('carryover',`?to_date=eq.${closeDate}&van_id=eq.${vanId}`),
-    sbG('settlements',`?date=eq.${closeDate}&van_id=eq.${vanId}`)
+    sbG('van_loads',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
+    sbG('carryover',`?to_date=eq.${closeDate}&van_id=eq.${vanId}`),
+    sbG('settlements',`?date=eq.${closeDate}&van_id=eq.${vanId}`),
+    sbG('van_returns',`?date=eq.${closeDate}&van_id=eq.${vanId}`)
   ]);
-  const st=W.cl||(W.cl={cash:'',note:'',msg:''});
-  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const st=W.cl||(W.cl={cash:'',unsoldEntries:{},damageEntries:{},step:1,msg:''});
+  W.cl=st;
+  const dets=rawDets;
   const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
-  const totalDam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const totalDamAmt=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
   const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
   const expectedCash=totalSold-totalCredit;
-  const existSettle=Array.isArray(settle)?settle[0]:settle;
+  const existSettle=settle[0]||null;
 
+  // Per product stock calculation
+  const productStock=products.map(p=>{
+    const loaded=loads.filter(l=>l.product_id===p.id).reduce((s,l)=>s+(+l.qty||0),0);
+    const carried=carries.filter(c=>c.product_id===p.id).reduce((s,c)=>s+(+c.qty||0),0);
+    const sold=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.qty_sold||0),0);
+    const damQty=dets.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.packets_returned||0),0);
+    const total=loaded+carried;
+    const expectedUnsold=Math.max(0,total-sold-damQty);
+    const existRet=existReturns.find(r=>r.product_id===p.id);
+    return{...p,loaded,carried,total,sold,damQty,expectedUnsold,existRet};
+  }).filter(p=>p.total>0);
+
+  // If already submitted
   if(existSettle?.salesman_declared_cash!=null){
-    const status=existSettle.status;
-    return `<div class="van-hdr"><div class="vh-t">🏁 ${S.vanName} — Day Closed</div><div class="vh-s">${bsL(TODAY)}</div></div>
-    <div class="card">
-      <div class="ct">Day Summary</div>
+    const totalUnsold=existReturns.reduce((s,r)=>s+(+r.unsold_qty||0),0);
+    const totalDamRet=existReturns.reduce((s,r)=>s+(+r.damage_qty||0),0);
+    return `
+    <div class="van-hdr"><div class="vh-t">🏁 ${S.vanName} — Day Closed</div><div class="vh-s">${bsL(closeDate)} · ${S.driver}</div>
+      <div class="vh-stats">
+        <div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div>
+        <div class="vhs"><div class="vhs-v">${totalUnsold}</div><div class="vhs-l">Unsold Returned</div></div>
+        <div class="vhs"><div class="vhs-v">${totalDamRet}</div><div class="vhs-l">Damage Returned</div></div>
+      </div>
+    </div>
+    <div class="card"><div class="ct">Stock Return Summary</div>
+      <div class="tblw"><table class="tbl">
+        <thead><tr><th>Product</th><th class="tr">Loaded</th><th class="tr">Sold</th><th class="tr">Damage</th><th class="tr">Unsold</th><th class="tr">Accounted</th></tr></thead>
+        <tbody>${productStock.map(p=>{
+          const ur=existReturns.find(r=>r.product_id===p.id);
+          const u=ur?.unsold_qty||0;const dm=ur?.damage_qty||0;
+          const acc=p.sold+dm+u;const ok=acc===p.total;
+          return`<tr><td style="font-size:12px">${p.name}</td><td class="tr">${p.total}</td><td class="tr cteal">${p.sold}</td><td class="tr cred">${dm}</td><td class="tr camb">${u}</td><td class="tr"><span class="badge ${ok?'bg':'br'}">${ok?'✓ OK':'⚠ '+(p.total-acc)+' missing'}</span></td></tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>
+    <div class="card"><div class="ct">Cash Summary</div>
       <div class="settle-row"><span>Total Sales</span><span class="fm">${Rs(totalSold)}</span></div>
-      <div class="settle-row"><span>Damage Deducted</span><span class="cred">${Rs(totalDam)}</span></div>
-      <div class="settle-row"><span>Credit Given</span><span class="camb">${Rs(totalCredit)}</span></div>
+      <div class="settle-row"><span>Damage Deducted</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
+      <div class="settle-row"><span>Credit Given</span><span class="camb">− ${Rs(totalCredit)}</span></div>
       <div class="settle-row"><span>Expected Cash</span><span class="fm cteal">${Rs(expectedCash)}</span></div>
       <div class="settle-row"><span>You Declared</span><span class="fm">${Rs(existSettle.salesman_declared_cash)}</span></div>
-      <div style="margin-top:12px;padding:12px;background:var(--teal-l);border-radius:10px;text-align:center">
-        <div style="font-size:13px;color:var(--teal);font-weight:700">✓ Day Closed — Waiting for owner to confirm</div>
-      </div>
+    </div>
+    <div style="padding:14px;background:var(--teal-l);border-radius:12px;text-align:center;border:1.5px solid var(--teal-b)">
+      <div style="font-size:14px;font-weight:800;color:var(--teal)">✓ Day Closed — Waiting for owner to confirm</div>
     </div>`;
   }
 
+  // STEP 1 — Stock return entry
+  if(st.step===1){
+    return `
+    ${st.msg?`<div class="al al-e">${st.msg}</div>`:''}
+    <div class="van-hdr"><div class="vh-t">🏁 Close My Day — Step 1 of 2</div><div class="vh-s">${S.driver} · ${bsL(closeDate)}</div>
+      <div class="vh-stats">
+        <div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div>
+        <div class="vhs"><div class="vhs-v">${RsC(totalSold).replace('Rs. ','')}</div><div class="vhs-l">Sales</div></div>
+        <div class="vhs"><div class="vhs-v">${RsC(totalDamAmt).replace('Rs. ','')}</div><div class="vhs-l">Damage</div></div>
+      </div>
+    </div>
+    <div class="al al-i">📦 Count what is physically in your van right now. Enter the quantities below.</div>
+    <div class="card">
+      <div class="ct">Stock Return — Count Your Van</div>
+      <div class="tblw"><table class="tbl">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th class="tr" style="color:var(--red)">🗑 Damage<br><span style="font-size:9px;font-weight:400">from shops</span></th>
+            <th class="tr" style="color:var(--amb)">📦 Unsold<br><span style="font-size:9px;font-weight:400">good stock</span></th>
+            <th class="tr" style="color:var(--txs)">Expected<br><span style="font-size:9px;font-weight:400">unsold</span></th>
+          </tr>
+        </thead>
+        <tbody>${productStock.map(p=>`
+          <tr>
+            <td><div style="font-size:12px;font-weight:600">${p.name}</div><div style="font-size:10px;color:var(--txs)">Loaded: ${p.total} · Sold: ${p.sold}</div></td>
+            <td class="tr"><input type="number" inputmode="numeric" min="0" id="dam-${p.id}"
+              style="width:58px;padding:6px 7px;border:1.5px solid var(--red-b);border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:inherit;background:var(--red-l);outline:none"
+              placeholder="0" value="${st.damageEntries[p.id]||''}"
+              onchange="W.cl.damageEntries[${p.id}]=parseInt(this.value)||0;sUpdReturn(${p.id})"/></td>
+            <td class="tr"><input type="number" inputmode="numeric" min="0" id="uns-${p.id}"
+              style="width:58px;padding:6px 7px;border:1.5px solid var(--amb-b);border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:inherit;background:var(--amb-l);outline:none"
+              placeholder="${p.expectedUnsold}" value="${st.unsoldEntries[p.id]||''}"
+              onchange="W.cl.unsoldEntries[${p.id}]=parseInt(this.value)||0;sUpdReturn(${p.id})"/></td>
+            <td class="tr"><span id="ret-exp-${p.id}" style="font-size:13px;font-weight:700;color:var(--txs)">${p.expectedUnsold}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+      <div style="margin-top:12px;padding:11px 13px;background:var(--sur2);border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase">Total Damage</div>
+          <div id="total-dam-qty" style="font-size:18px;font-weight:800;color:var(--red)">0 pkts</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase">Total Unsold</div>
+          <div id="total-uns-qty" style="font-size:18px;font-weight:800;color:var(--amb)">0 pkts</div>
+        </div>
+      </div>
+    </div>
+    <div class="al al-w">
+      <b>Remember:</b><br>
+      🗑 <b>Damage</b> = products collected from shops (expired/broken) → will be thrown away<br>
+      📦 <b>Unsold</b> = good products left in van → will go back to factory stock
+    </div>
+    <button class="btn btn-amb btn-full" onclick="goStep2()">Next → Declare Cash</button>`;
+  }
+
+  // STEP 2 — Cash declaration
+  const totalDamQty=Object.values(st.damageEntries).reduce((s,v)=>s+v,0);
+  const totalUnsQty=Object.values(st.unsoldEntries).reduce((s,v)=>s+v,0);
   return `
   ${st.msg?`<div class="al al-e">${st.msg}</div>`:''}
-  ${orders.length===0?`<div class="al al-w">⚠ You have no orders recorded today. Are you sure you want to close your day?</div>`:''}
-  <div class="van-hdr"><div class="vh-t">🏁 Close My Day</div><div class="vh-s">${S.driver} · ${bsL(TODAY)}</div>
-    <div class="vh-stats"><div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div><div class="vhs"><div class="vhs-v">${RsC(totalSold).replace('Rs. ','')}</div><div class="vhs-l">Sales</div></div><div class="vhs"><div class="vhs-v">${RsC(totalDam).replace('Rs. ','')}</div><div class="vhs-l">Damage</div></div></div>
+  <div class="van-hdr"><div class="vh-t">🏁 Close My Day — Step 2 of 2</div><div class="vh-s">${S.driver} · ${bsL(closeDate)}</div>
+    <div class="vh-stats">
+      <div class="vhs"><div class="vhs-v">${totalDamQty}</div><div class="vhs-l">Damage Pkts</div></div>
+      <div class="vhs"><div class="vhs-v">${totalUnsQty}</div><div class="vhs-l">Unsold Pkts</div></div>
+      <div class="vhs"><div class="vhs-v">${orders.length}</div><div class="vhs-l">Orders</div></div>
+    </div>
   </div>
-  <div class="card"><div class="ct">Day Summary</div>
-    <div class="settle-row"><span>Total Sales (${orders.length} orders)</span><span class="fm">${Rs(totalSold)}</span></div>
-    <div class="settle-row"><span>Damage / Returns Deducted</span><span class="cred">− ${Rs(totalDam)}</span></div>
+  <div class="card"><div class="ct">Return Summary</div>
+    <div class="settle-row"><span>Total Loaded</span><span>${productStock.reduce((s,p)=>s+p.total,0)} pkts</span></div>
+    <div class="settle-row"><span>Sold to Shops</span><span class="cteal">${productStock.reduce((s,p)=>s+p.sold,0)} pkts</span></div>
+    <div class="settle-row" style="color:var(--red)"><span>🗑 Damage Returned (to throw)</span><span class="fm">${totalDamQty} pkts</span></div>
+    <div class="settle-row" style="color:var(--amb)"><span>📦 Unsold Returned (to stock)</span><span class="fm">${totalUnsQty} pkts</span></div>
+    <div class="settle-row"><span class="fm">Total Accounted</span><span class="fm">${productStock.reduce((s,p)=>s+p.sold,0)+totalDamQty+totalUnsQty} of ${productStock.reduce((s,p)=>s+p.total,0)} pkts</span></div>
+  </div>
+  <div class="card"><div class="ct">Cash Summary</div>
+    <div style="text-align:center;margin-bottom:12px;padding:12px;background:var(--teal-l);border-radius:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:4px">Expected Cash to Hand Over</div>
+      <div style="font-size:32px;font-weight:800;color:var(--teal)">${Rs(expectedCash)}</div>
+      <div style="font-size:11px;color:var(--txs);margin-top:4px">Sales ${Rs(totalSold)} − Credit ${Rs(totalCredit)}</div>
+    </div>
+    <div class="settle-row"><span>Total Sales</span><span class="fm">${Rs(totalSold)}</span></div>
+    <div class="settle-row"><span>Damage Deducted from Bills</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
     <div class="settle-row"><span>Credit Given to Shops</span><span class="camb">− ${Rs(totalCredit)}</span></div>
-    <div class="settle-row"><span style="font-size:14px;font-weight:700">Cash to Hand Over</span><span class="fm cteal" style="font-size:18px">${Rs(expectedCash)}</span></div>
+    <div class="settle-row"><span class="fm">Cash to Hand Over</span><span class="fm cteal" style="font-size:18px">${Rs(expectedCash)}</span></div>
   </div>
-  <div class="card"><div class="ct">Count & Declare Your Cash</div>
-    <p style="font-size:13px;color:var(--txs);margin-bottom:12px">Count the cash you are holding right now. Enter the exact amount before returning to the factory.</p>
-    <div style="text-align:center;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin-bottom:6px">Expected Amount</div>
-      <div style="font-size:28px;font-weight:800;color:var(--teal)">${Rs(expectedCash)}</div>
+  <div class="card"><div class="ct">Count Your Cash</div>
+    <p style="font-size:13px;color:var(--txs);margin-bottom:12px">Count all the cash you have right now. Enter the exact amount.</p>
+    <div class="fg"><label class="fl">Actual Cash in Hand (Rs.)</label>
+      <input type="number" inputmode="decimal" class="fi" min="0" step="0.01"
+        value="${st.cash||''}" placeholder="${expectedCash.toFixed(2)}"
+        oninput="W.cl.cash=this.value"
+        style="font-size:22px;font-weight:800;text-align:center;padding:14px"/>
     </div>
-    <div class="fg"><label class="fl">Your Actual Cash in Hand (Rs.)</label>
-      <input type="number" inputmode="decimal" class="fi" min="0" step="0.01" value="${st.cash||''}" placeholder="${expectedCash.toFixed(2)}" oninput="W.cl.cash=this.value" style="font-size:22px;font-weight:800;text-align:center;padding:14px"/>
-    </div>
-    ${st.cash?`<div style="font-size:14px;font-weight:700;padding:10px 14px;border-radius:10px;text-align:center;background:${parseFloat(st.cash||0)<expectedCash-1?'var(--red-l)':parseFloat(st.cash||0)>expectedCash+1?'var(--amb-l)':'var(--grn-l)'};color:${parseFloat(st.cash||0)<expectedCash-1?'var(--red)':parseFloat(st.cash||0)>expectedCash+1?'var(--amb)':'var(--grn)'}">
-      ${parseFloat(st.cash||0)<expectedCash-1?'⚠ SHORT by '+Rs(expectedCash-parseFloat(st.cash||0)):parseFloat(st.cash||0)>expectedCash+1?'You have '+Rs(parseFloat(st.cash||0)-expectedCash)+' extra':'✓ Amount matches!'}
+    ${st.cash?`<div style="font-size:14px;font-weight:700;padding:10px 14px;border-radius:10px;text-align:center;background:${parseFloat(st.cash)<expectedCash-1?'var(--red-l)':parseFloat(st.cash)>expectedCash+1?'var(--amb-l)':'var(--grn-l)'};color:${parseFloat(st.cash)<expectedCash-1?'var(--red)':parseFloat(st.cash)>expectedCash+1?'var(--amb)':'var(--grn)'}">
+      ${parseFloat(st.cash)<expectedCash-1?'⚠ SHORT by '+Rs(expectedCash-parseFloat(st.cash)):parseFloat(st.cash)>expectedCash+1?'You have '+Rs(parseFloat(st.cash)-expectedCash)+' extra':'✓ Amount matches!'}
     </div>`:''}
-    <button class="btn btn-amb btn-full" style="margin-top:12px;font-size:15px" onclick="aCloseDay(${expectedCash.toFixed(2)})">🏁 Submit & Return to Factory</button>
-    ${orders.length===0?`<p style="font-size:11px;color:var(--txs);text-align:center;margin-top:8px">No sales recorded — you can still close the day</p>`:''}
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost" style="flex:0 0 auto" onclick="W.cl.step=1;render()">← Back</button>
+    <button class="btn btn-amb btn-full" style="font-size:15px" onclick="aCloseDay(${expectedCash.toFixed(2)},${JSON.stringify(st.damageEntries||{})},${JSON.stringify(st.unsoldEntries||{})})">🏁 Submit & Return to Factory</button>
   </div>`;
 };
 
@@ -2207,13 +2366,33 @@ async function aSubmitSale(){
   render();
 }
 
-async function aCloseDay(expectedCash){
+function goStep2(){
+  const st=W.cl;
+  // Validate — make sure entries are initialised
+  if(!st.unsoldEntries)st.unsoldEntries={};
+  if(!st.damageEntries)st.damageEntries={};
+  st.step=2;st.msg='';render();
+}
+
+function sUpdReturn(pid){
+  // Update running totals display without full re-render
+  const st=W.cl;
+  if(!st.damageEntries)st.damageEntries={};
+  if(!st.unsoldEntries)st.unsoldEntries={};
+  const dam=Object.values(st.damageEntries).reduce((s,v)=>s+(+v||0),0);
+  const uns=Object.values(st.unsoldEntries).reduce((s,v)=>s+(+v||0),0);
+  const dEl=document.getElementById('total-dam-qty');
+  const uEl=document.getElementById('total-uns-qty');
+  if(dEl)dEl.textContent=dam+' pkts';
+  if(uEl)uEl.textContent=uns+' pkts';
+}
+
+async function aCloseDay(expectedCash,damageEntries,unsoldEntries){
   const st=W.cl;
   if(!st.cash){st.msg='Enter your cash amount.';render();return;}
   const declared=parseFloat(st.cash);
   const vanId=S.vanId;
   const tmrwDate=tmrw();
-  // Detect which date has orders
   const todO=await sbG('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`);
   const tmrwO=await sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`);
   const useDate=tmrwO.length>0?tmrwDate:TODAY;
@@ -2223,15 +2402,44 @@ async function aCloseDay(expectedCash){
     try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
   }
   const totalSold=orders.reduce((s,o)=>s+(+o.total||0),0);
-  const totalDam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const totalDamAmt=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
   const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
-  const settleData={date:useDate,van_id:parseInt(vanId),total_sold:parseFloat(totalSold.toFixed(2)),total_damage:parseFloat(totalDam.toFixed(2)),total_credit_given:parseFloat(totalCredit.toFixed(2)),expected_cash:parseFloat(expectedCash),salesman_declared_cash:declared,status:'salesman_submitted',salesman_submitted_at:new Date().toISOString()};
+  const totalDamQty=Object.values(damageEntries||{}).reduce((s,v)=>s+(+v||0),0);
+  const totalUnsoldQty=Object.values(unsoldEntries||{}).reduce((s,v)=>s+(+v||0),0);
+
+  // Save van_returns per product
+  const de=damageEntries||{};const ue=unsoldEntries||{};
+  const allPids=new Set([...Object.keys(de),...Object.keys(ue)]);
+  for(const pid of allPids){
+    const dq=parseInt(de[pid])||0;const uq=parseInt(ue[pid])||0;
+    if(!dq&&!uq)continue;
+    try{
+      const ex=await sbG('van_returns',`?date=eq.${useDate}&van_id=eq.${vanId}&product_id=eq.${pid}`);
+      const payload={date:useDate,van_id:parseInt(vanId),product_id:parseInt(pid),damage_qty:dq,unsold_qty:uq};
+      if(ex.length)await sbU('van_returns',`?id=eq.${ex[0].id}`,{damage_qty:dq,unsold_qty:uq});
+      else await sbP('van_returns',[payload]);
+    }catch(e){qAdd({type:'ins',table:'van_returns',data:{date:useDate,van_id:parseInt(vanId),product_id:parseInt(pid),damage_qty:dq,unsold_qty:uq}});updSync();}
+  }
+
+  const settleData={
+    date:useDate,van_id:parseInt(vanId),
+    total_sold:parseFloat(totalSold.toFixed(2)),
+    total_damage:parseFloat(totalDamAmt.toFixed(2)),
+    total_damage_qty:totalDamQty,
+    total_unsold_qty:totalUnsoldQty,
+    total_credit_given:parseFloat(totalCredit.toFixed(2)),
+    expected_cash:parseFloat(expectedCash),
+    salesman_declared_cash:declared,
+    status:'salesman_submitted',
+    salesman_submitted_at:new Date().toISOString(),
+    return_submitted_at:new Date().toISOString()
+  };
   try{
     const ex=await sbG('settlements',`?date=eq.${useDate}&van_id=eq.${vanId}`);
     if(ex.length)await sbU('settlements',`?id=eq.${ex[0].id}`,settleData);
     else await sbP('settlements',[settleData]);
   }catch(e){qAdd({type:'ins',table:'settlements',data:settleData});updSync();}
-  W.cl={cash:'',note:'',msg:''};render();
+  W.cl={cash:'',unsoldEntries:{},damageEntries:{},step:1,msg:''};render();
 }
 
 async function aConfirmSettle(vanId,settleId,expectedCash){
