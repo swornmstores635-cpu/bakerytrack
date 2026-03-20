@@ -586,15 +586,22 @@ const TITLES={
   'o-carry':'Stock Carryover','o-credits':'Shop Credits','o-settle':'Settlement',
   'o-history':'Sales History','o-setup':'Setup','o-setup-prod':'Products',
   'o-setup-vans':'Vans & PINs','o-setup-shops':'Shops','o-setup-areas':'Areas','o-more':'More',
-  'o-ops-mobile':'Operations','o-fin-mobile':'Finance',
+  'o-ops-mobile':'Operations','o-fin-mobile':'Finance','o-home-ops':'Operations','o-home-fin':'Finance','o-home-analytics':'Reports','o-home-setup':'Setup',
   'o-analytics':'Analytics','o-van-report':'Van Performance','o-shop-report':'Shop Report','o-period-report':'Period Report',
   'o-shop-detail':'Shop Detail','s-shop-detail':'Shop Detail',
+  'o-home-ops':'Operations','o-home-fin':'Finance','o-home-analytics':'Reports','o-home-setup':'Setup','o-more':'More',
   's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
   's-history':'My Sales','s-close':'Close My Day','s-more':'More','s-performance':'My Performance','s-customers':'My Customers'
 };
-const ROOT_O=['o-dash','o-more','o-ops-mobile','o-fin-mobile','o-analytics'];
+const ROOT_O=['o-dash','o-home-ops','o-home-fin','o-home-analytics','o-home-setup'];
 const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more','s-performance','s-customers'];
-const OBN=[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-ops-mobile',l:'Operations',ic:'🚐'},{id:'o-fin-mobile',l:'Finance',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'},{id:'o-more',l:'More',ic:'⚙️'}];
+const OBN=[
+  {id:'o-dash',l:'Dashboard',ic:'📊'},
+  {id:'o-home-ops',l:'Operations',ic:'🚐'},
+  {id:'o-home-fin',l:'Finance',ic:'💰'},
+  {id:'o-home-analytics',l:'Reports',ic:'📈'},
+  {id:'o-home-setup',l:'Setup',ic:'⚙️'}
+];
 const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-performance',l:'My Stats',ic:'📊'},{id:'s-customers',l:'Customers',ic:'🏪'},{id:'s-more',l:'More',ic:'⚙️'}];
 const ONAV=[
   {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'}]},
@@ -1352,45 +1359,105 @@ PG['o-setup-shops']=async()=>{
 };
 
 // ── MOBILE: OPERATIONS HUB ───────────────
-PG['o-ops-mobile']=()=>Promise.resolve(`
-  <div class="sec-lbl">Operations</div>
-  <div class="mgrid">
-    <button class="mc-btn" onclick="goTo('o-prod')"><span class="mc-ic">🏭</span><span class="mc-t">Production</span><span class="mc-s">Log factory output</span></button>
-    <button class="mc-btn" onclick="goTo('o-load')"><span class="mc-ic">🚐</span><span class="mc-t">Van Loading</span><span class="mc-s">Evening van loads</span></button>
-    <button class="mc-btn" onclick="goTo('o-stock')"><span class="mc-ic">📦</span><span class="mc-t">Van Stock</span><span class="mc-s">Live stock levels</span></button>
-    <button class="mc-btn" onclick="goTo('o-carry')"><span class="mc-ic">🔄</span><span class="mc-t">Carryover</span><span class="mc-s">Move leftover stock</span></button>
+// ── MOBILE HOME: OPERATIONS ──────────────
+PG['o-home-ops']=()=>Promise.resolve(`
+  <div class="sec-lbl" style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:10px">🚐 Operations</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <button class="mc-btn" onclick="goTo('o-prod')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🏭</span>
+      <div style="text-align:left"><span class="mc-t">Production</span><span class="mc-s">Log today's factory output</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-load')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🚐</span>
+      <div style="text-align:left"><span class="mc-t">Van Loading</span><span class="mc-s">Load vans for tomorrow's delivery</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-stock')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📦</span>
+      <div style="text-align:left"><span class="mc-t">Van Stock</span><span class="mc-s">Check live stock in each van</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-carry')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🔄</span>
+      <div style="text-align:left"><span class="mc-t">Carryover</span><span class="mc-s">Move leftover stock to next day</span></div>
+    </button>
   </div>`);
 
-// ── MOBILE: FINANCE HUB ──────────────────
-PG['o-fin-mobile']=()=>Promise.resolve(`
-  <div class="sec-lbl">Finance</div>
-  <div class="mgrid">
-    <button class="mc-btn" onclick="goTo('o-settle')"><span class="mc-ic">💰</span><span class="mc-t">Settlement</span><span class="mc-s">End of day cash</span></button>
-    <button class="mc-btn" onclick="goTo('o-credits')"><span class="mc-ic">💳</span><span class="mc-t">Shop Credits</span><span class="mc-s">Outstanding balances</span></button>
-    <button class="mc-btn" onclick="goTo('o-profit')"><span class="mc-ic">📊</span><span class="mc-t">Profit Report</span><span class="mc-s">Revenue vs cost</span></button>
-    <button class="mc-btn" onclick="goTo('o-history')"><span class="mc-ic">🗂</span><span class="mc-t">Sales History</span><span class="mc-s">All orders</span></button>
+// ── MOBILE HOME: FINANCE ─────────────────
+PG['o-home-fin']=()=>Promise.resolve(`
+  <div class="sec-lbl" style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:10px">💰 Finance</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <button class="mc-btn" onclick="goTo('o-settle')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">💰</span>
+      <div style="text-align:left"><span class="mc-t">Settlement</span><span class="mc-s">End of day cash verification</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-credits')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">💳</span>
+      <div style="text-align:left"><span class="mc-t">Shop Credits</span><span class="mc-s">Outstanding balances & payments</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-rpt')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📈</span>
+      <div style="text-align:left"><span class="mc-t">Daily Report</span><span class="mc-s">Today's sales summary & print</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-history')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🗂</span>
+      <div style="text-align:left"><span class="mc-t">Sales History</span><span class="mc-s">All orders, filter by date</span></div>
+    </button>
   </div>`);
 
-// ── OWNER: MORE ───────────────────────────
+// ── MOBILE HOME: REPORTS/ANALYTICS ───────
+PG['o-home-analytics']=()=>Promise.resolve(`
+  <div class="sec-lbl" style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:10px">📈 Reports & Analytics</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <button class="mc-btn" onclick="goTo('o-period-report')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📅</span>
+      <div style="text-align:left"><span class="mc-t">Period Report</span><span class="mc-s">Daily · Weekly · Monthly · Yearly</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-van-report')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🚐</span>
+      <div style="text-align:left"><span class="mc-t">Van Performance</span><span class="mc-s">Sales, returns, damage per van</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-shop-report')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🏪</span>
+      <div style="text-align:left"><span class="mc-t">Shop Report</span><span class="mc-s">Top shops, buying habits, detail</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-profit')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">💰</span>
+      <div style="text-align:left"><span class="mc-t">Profit Report</span><span class="mc-s">Revenue vs cost, margin %</span></div>
+    </button>
+  </div>`);
+
+// ── MOBILE HOME: SETUP ───────────────────
+PG['o-home-setup']=()=>Promise.resolve(`
+  <div class="sec-lbl" style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:10px">⚙️ Setup</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <button class="mc-btn" onclick="goTo('o-setup-prod')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🍞</span>
+      <div style="text-align:left"><span class="mc-t">Products</span><span class="mc-s">Names, rates, piece pricing</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-setup-vans')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🚌</span>
+      <div style="text-align:left"><span class="mc-t">Vans & PINs</span><span class="mc-s">Van names, drivers, salesman PINs</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-setup-shops')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🏪</span>
+      <div style="text-align:left"><span class="mc-t">Shops</span><span class="mc-s">Add, edit, assign to vans</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-setup-areas')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📍</span>
+      <div style="text-align:left"><span class="mc-t">Areas / Zones</span><span class="mc-s">Group shops by area</span></div>
+    </button>
+  </div>
+  <div style="margin-top:12px">
+    <button class="btn btn-full" style="border-color:var(--red);color:var(--red)" onclick="logout()">🚪 Sign Out</button>
+  </div>`);
+
+// ── OWNER: MORE (desktop only reference) ─
 PG['o-more']=()=>Promise.resolve(`
-  <div class="sec-lbl">Analytics</div>
-  <div class="mgrid" style="margin-bottom:12px">
-    <button class="mc-btn" onclick="goTo('o-analytics')"><span class="mc-ic">📉</span><span class="mc-t">Analytics Hub</span><span class="mc-s">All reports in one place</span></button>
-    <button class="mc-btn" onclick="goTo('o-period-report')"><span class="mc-ic">📅</span><span class="mc-t">Period Report</span><span class="mc-s">Daily · Weekly · Monthly · Yearly</span></button>
-    <button class="mc-btn" onclick="goTo('o-van-report')"><span class="mc-ic">🚐</span><span class="mc-t">Van Performance</span><span class="mc-s">Sales, returns, damage</span></button>
-    <button class="mc-btn" onclick="goTo('o-shop-report')"><span class="mc-ic">🏪</span><span class="mc-t">Shop Report</span><span class="mc-s">Top shops, buying habits</span></button>
-  </div>
-  <div class="sec-lbl">Reports</div>
-  <div class="mgrid" style="margin-bottom:12px">
-    <button class="mc-btn" onclick="goTo('o-rpt')"><span class="mc-ic">📈</span><span class="mc-t">Daily Report</span><span class="mc-s">Sales summary + print</span></button>
-    <button class="mc-btn" onclick="goTo('o-profit')"><span class="mc-ic">💰</span><span class="mc-t">Profit Report</span><span class="mc-s">Revenue vs cost</span></button>
-  </div>
-  <div class="sec-lbl">Setup</div>
+  <div class="sec-lbl">All Sections</div>
   <div class="mgrid">
-    <button class="mc-btn" onclick="goTo('o-setup-prod')"><span class="mc-ic">🍞</span><span class="mc-t">Products</span><span class="mc-s">Names, rates, piece pricing</span></button>
-    <button class="mc-btn" onclick="goTo('o-setup-vans')"><span class="mc-ic">🚌</span><span class="mc-t">Vans & PINs</span><span class="mc-s">Van names, drivers, PINs</span></button>
-    <button class="mc-btn" onclick="goTo('o-setup-shops')"><span class="mc-ic">🏪</span><span class="mc-t">Shops</span><span class="mc-s">Customer shops</span></button>
-    <button class="mc-btn" onclick="goTo('o-setup-areas')"><span class="mc-ic">📍</span><span class="mc-t">Areas / Zones</span><span class="mc-s">Group shops by area</span></button>
+    <button class="mc-btn" onclick="goTo('o-home-ops')"><span class="mc-ic">🚐</span><span class="mc-t">Operations</span></button>
+    <button class="mc-btn" onclick="goTo('o-home-fin')"><span class="mc-ic">💰</span><span class="mc-t">Finance</span></button>
+    <button class="mc-btn" onclick="goTo('o-home-analytics')"><span class="mc-ic">📈</span><span class="mc-t">Reports</span></button>
+    <button class="mc-btn" onclick="goTo('o-home-setup')"><span class="mc-ic">⚙️</span><span class="mc-t">Setup</span></button>
   </div>`);
 
 // ── ANALYTICS HUB ────────────────────────
@@ -2574,24 +2641,42 @@ PG['s-customers']=async()=>{
 };
 
 PG['s-more']=()=>Promise.resolve(`
-  <div class="card" style="text-align:center;padding:20px 16px 14px">
-    <div style="font-size:46px;margin-bottom:10px">🥐</div>
-    <div style="font-size:18px;font-weight:800">BakeryTrack</div>
-    <div style="font-size:12px;color:var(--txs);margin-top:3px">Salesman Edition</div>
-    <div style="margin-top:12px;display:inline-block;padding:10px 18px;background:var(--red-l);border-radius:12px">
-      <div style="font-size:14px;font-weight:700;color:var(--red)">${S.vanName}</div>
-      <div style="font-size:12px;color:var(--txs);margin-top:2px">${S.driver}</div>
-    </div>
+  <div style="background:var(--red);border-radius:14px;padding:16px;margin-bottom:12px;color:#fff;text-align:center">
+    <div style="font-size:13px;font-weight:700;opacity:.8">Signed in as</div>
+    <div style="font-size:20px;font-weight:800;margin-top:4px">${S.driver}</div>
+    <div style="font-size:13px;opacity:.8;margin-top:2px">${S.vanName}</div>
   </div>
-  <div class="sec-lbl">My Reports</div>
-  <div class="mgrid" style="margin-bottom:12px">
-    <button class="mc-btn" onclick="goTo('s-performance')"><span class="mc-ic">📊</span><span class="mc-t">My Performance</span><span class="mc-s">Sales, returns, damage stats</span></button>
-    <button class="mc-btn" onclick="goTo('s-customers')"><span class="mc-ic">🏪</span><span class="mc-t">My Customers</span><span class="mc-s">Shop report + who to visit</span></button>
-    <button class="mc-btn" onclick="goTo('s-credits')"><span class="mc-ic">💳</span><span class="mc-t">Credits</span><span class="mc-s">Shop balances</span></button>
-    <button class="mc-btn" onclick="goTo('s-history')"><span class="mc-ic">🗂</span><span class="mc-t">My Sales</span><span class="mc-s">Order history</span></button>
-    <button class="mc-btn" onclick="goTo('s-close')"><span class="mc-ic">🏁</span><span class="mc-t">Close My Day</span><span class="mc-s">Hand over cash</span></button>
+  <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:12px">
+    <button class="mc-btn" onclick="goTo('s-sale')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🛒</span>
+      <div style="text-align:left"><span class="mc-t">New Sale</span><span class="mc-s">Record a sale at a shop</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('s-stock')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📦</span>
+      <div style="text-align:left"><span class="mc-t">My Stock</span><span class="mc-s">See what is in your van</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('s-performance')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📊</span>
+      <div style="text-align:left"><span class="mc-t">My Performance</span><span class="mc-s">Sales stats, return rate, tips</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('s-customers')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🏪</span>
+      <div style="text-align:left"><span class="mc-t">My Customers</span><span class="mc-s">Who ordered, who to visit, who owes</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('s-credits')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">💳</span>
+      <div style="text-align:left"><span class="mc-t">Shop Credits</span><span class="mc-s">Outstanding balances</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('s-history')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🗂</span>
+      <div style="text-align:left"><span class="mc-t">My Sales History</span><span class="mc-s">All orders I recorded</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('s-close')" style="display:flex;align-items:center;gap:14px;padding:16px;border-color:var(--amb-b);background:var(--amb-l)">
+      <span style="font-size:28px">🏁</span>
+      <div style="text-align:left"><span class="mc-t" style="color:var(--amb)">Close My Day</span><span class="mc-s">Return stock + hand over cash</span></div>
+    </button>
   </div>
-  <button class="btn btn-full" style="border-color:var(--red);color:var(--red)" onclick="logout()">🚪 Sign Out</button>`);
+  <button class="btn btn-full" style="border-color:var(--red);color:var(--red);padding:14px;font-size:14px" onclick="logout()">🚪 Sign Out</button>`);
 
 // ════════════════════════════════════════
 // ACTIONS
