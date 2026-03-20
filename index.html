@@ -588,6 +588,7 @@ const TITLES={
   'o-setup-vans':'Vans & PINs','o-setup-shops':'Shops','o-setup-areas':'Areas','o-more':'More',
   'o-ops-mobile':'Operations','o-fin-mobile':'Finance',
   'o-analytics':'Analytics','o-van-report':'Van Performance','o-shop-report':'Shop Report','o-period-report':'Period Report',
+  'o-shop-detail':'Shop Detail','s-shop-detail':'Shop Detail',
   's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
   's-history':'My Sales','s-close':'Close My Day','s-more':'More','s-performance':'My Performance','s-customers':'My Customers'
 };
@@ -1680,7 +1681,7 @@ PG['o-shop-report']=async()=>{
       </div>
     </div>
     <div class="tblw"><table class="tbl">
-      <thead><tr><th>#</th><th>Shop</th><th>Van</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th><th class="tr">Balance</th></tr></thead>
+      <thead><tr><th>#</th><th>Shop</th><th>Van</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th><th class="tr">Balance</th><th></th></tr></thead>
       <tbody>${showing.map((s,i)=>`<tr>
         <td style="font-size:11px;color:var(--txs)">${i+1}</td>
         <td><div style="font-size:13px;font-weight:600">${s.name}</div><div style="font-size:10px;color:var(--txs)">${s.address||''}</div></td>
@@ -1690,6 +1691,7 @@ PG['o-shop-report']=async()=>{
         <td class="tr cred">${s.dam>0?RsC(s.dam):'—'}</td>
         <td class="tr camb">${s.cr>0?RsC(s.cr):'—'}</td>
         <td class="tr fm" style="color:${+s.balance>0?'var(--red)':+s.balance<0?'var(--grn)':'var(--txs)'}">${+s.balance!==0?RsC(Math.abs(+s.balance)):'—'}</td>
+        <td><button class="btn btn-sm btn-teal" onclick="viewShopDetail(${s.id},'owner')">Detail →</button></td>
       </tr>`).join('')}</tbody>
     </table></div>
   </div>
@@ -1697,13 +1699,155 @@ PG['o-shop-report']=async()=>{
   <div class="card">
     <div class="ct">Shops With No Orders This Period (${shops.filter(s=>!shopData.find(x=>x.id===s.id)).length})</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">
-      ${shops.filter(s=>!shopData.find(x=>x.id===s.id)).map(s=>`<span class="badge bm">${s.name}</span>`).join('')}
+      ${shops.filter(s=>!shopData.find(x=>x.id===s.id)).map(s=>`<button class="badge bm" style="cursor:pointer;border:none;font-family:inherit" onclick="viewShopDetail(${s.id},'owner')">${s.name}</button>`).join('')}
     </div>
   </div>`:''}`;
 };
 
-// ════════════════════════════════════════
-// SALESMAN PAGES
+// ── SHOP DETAIL PAGE (owner + salesman) ──────────────
+async function viewShopDetail(shopId,role){
+  W.shopDetailId=shopId;W.shopDetailRole=role||'owner';
+  goTo(role==='salesman'?'s-shop-detail':'o-shop-detail');
+}
+
+PG['o-shop-detail']=async()=>shopDetailPage('owner');
+PG['s-shop-detail']=async()=>shopDetailPage('salesman');
+
+async function shopDetailPage(role){
+  const shopId=W.shopDetailId;
+  if(!shopId){return`<div class="al al-e">No shop selected.</div>`;}
+  const mode=W.sdm||'monthly';W.sdm=mode;
+  const now=new Date();
+  let fromDate,toDate=TODAY,label='';
+  if(mode==='weekly'){const d=new Date(now);d.setDate(d.getDate()-6);fromDate=d.toISOString().split('T')[0];label='Last 7 Days';}
+  else if(mode==='monthly'){const d=new Date(now);d.setDate(1);fromDate=d.toISOString().split('T')[0];label='This Month';}
+  else if(mode==='all'){fromDate='2020-01-01';label='All Time';}
+  else{fromDate=W.sdFrom||TODAY;toDate=W.sdTo||TODAY;label='Custom';}
+
+  const [shop,products,credits,orders]=await Promise.all([
+    sbG('shops',`?id=eq.${shopId}`).then(r=>r[0]||{}),
+    getData('products'),
+    sbG('shop_credits',`?shop_id=eq.${shopId}`).then(r=>r[0]||{balance:0}),
+    sbG('orders',`?shop_id=eq.${shopId}&date=gte.${fromDate}&date=lte.${toDate}&order=date.desc`)
+  ]);
+  let dets=[];
+  if(orders.length>0){
+    try{dets=await sbG('order_details',`?order_id=in.(${orders.map(o=>o.id).join(',')})`);}catch(e){}
+  }
+
+  const balance=+(credits.balance||0);
+  const totalRev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const totalDam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const totalSoldQ=dets.reduce((s,d)=>s+(+d.qty_sold||0),0);
+
+  // Product breakdown — what this shop buys
+  const prodBreakdown=products.map(p=>{
+    const pd=dets.filter(d=>d.product_id==p.id);
+    const sold=pd.reduce((s,d)=>s+(+d.qty_sold||0),0);
+    if(!sold)return null;
+    const rev=pd.reduce((s,d)=>s+(+d.line_total||0),0);
+    const dam=pd.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const retPkts=pd.reduce((s,d)=>s+(+d.packets_returned||0),0);
+    const retPcs=pd.reduce((s,d)=>s+(+d.pieces_returned||0),0);
+    const avgPerOrder=orders.length>0?(sold/orders.length).toFixed(1):0;
+    return{...p,sold,rev,dam,retPkts,retPcs,avgPerOrder};
+  }).filter(Boolean).sort((a,b)=>b.rev-a.rev);
+
+  const maxRev=Math.max(...prodBreakdown.map(p=>p.rev),1);
+
+  // Order history
+  const recentOrders=orders.slice(0,20);
+
+  return `
+  <div style="background:var(--sur);border-radius:14px;padding:15px;margin-bottom:11px;border:1px solid var(--bd)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:18px;font-weight:800">${shop.name||'Unknown Shop'}</div>
+        <div style="font-size:12px;color:var(--txs);margin-top:3px">${shop.address||''}${shop.phone?' · '+shop.phone:''}</div>
+        <div style="font-size:12px;color:var(--txs);margin-top:2px">${shop.contact_name?'Contact: '+shop.contact_name:''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:700;color:${balance>0?'var(--red)':balance<0?'var(--grn)':'var(--txs)'}">
+          ${balance>0?'⚠ Owes: '+Rs(balance):balance<0?'✓ Credit: '+Rs(-balance):'✓ Clear'}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${['weekly','monthly','all','custom'].map(m=>`<button class="btn btn-sm ${mode===m?'btn-red':''}" onclick="W.sdm='${m}';render()">${m==='weekly'?'7 Days':m==='monthly'?'Month':m==='all'?'All Time':'Custom'}</button>`).join('')}
+  </div>
+  ${mode==='custom'?`<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="fg" style="flex:1;margin:0"><label class="fl">From</label><input type="date" class="fi" value="${fromDate}" onchange="W.sdFrom=this.value;render()"/></div>
+    <div class="fg" style="flex:1;margin:0"><label class="fl">To</label><input type="date" class="fi" value="${toDate}" onchange="W.sdTo=this.value;render()"/></div>
+  </div>`:''}
+  <div style="font-size:12px;font-weight:700;color:var(--txs);margin-bottom:11px">📅 ${label}</div>
+
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(totalRev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">On Credit</div><div class="mv camb">${RsC(totalCredit)}</div></div>
+    <div class="mc"><div class="ml">Damage</div><div class="mv cred">${RsC(totalDam)}</div></div>
+    <div class="mc"><div class="ml">Units Bought</div><div class="mv">${totalSoldQ}</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Products This Shop Buys</div>
+    ${prodBreakdown.length?prodBreakdown.map(p=>`
+    <div style="padding:10px 0;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700">${p.name}</div>
+          <div style="font-size:11px;color:var(--txs);margin-top:2px">
+            ${p.sold} pkts sold · avg ${p.avgPerOrder} per order
+            ${p.retPkts>0||p.retPcs>0?` · <span style="color:var(--red)">returned: ${p.retPkts>0?p.retPkts+' pkts':''}${p.retPcs>0?' '+p.retPcs+' pcs':''}</span>`:''}
+            ${p.dam>0?` · <span style="color:var(--red)">damage: ${Rs(p.dam)}</span>`:''}
+          </div>
+          <div style="background:var(--bd);border-radius:100px;height:4px;margin-top:6px;overflow:hidden">
+            <div style="height:100%;background:var(--teal);border-radius:100px;width:${(p.rev/maxRev*100).toFixed(0)}%"></div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:15px;font-weight:800;color:var(--teal)">${RsC(p.rev)}</div>
+          <div style="font-size:10px;color:var(--txs)">Rs.${p.rate}/pkt</div>
+        </div>
+      </div>
+    </div>`).join('')
+    :`<div class="empty" style="padding:14px"><div class="et">No purchases in this period</div></div>`}
+  </div>
+
+  <div class="card">
+    <div class="chdr"><div class="ct">Order History</div><span class="badge bt">${orders.length} orders</span></div>
+    ${recentOrders.length?`<div class="tblw"><table class="tbl">
+      <thead><tr><th>BS Date</th><th>AD Date</th><th class="tr">Total</th><th class="tr">Damage</th><th>Pay</th></tr></thead>
+      <tbody>${recentOrders.map(o=>{
+        const oDets=dets.filter(d=>d.order_id==o.id);
+        const oDam=oDets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+        const oItems=oDets.map(d=>{const p=products.find(x=>x.id==d.product_id);return p?`${p.name}×${d.qty_sold}`:'' ;}).filter(Boolean).join(', ');
+        return`<tr onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'table-row':'none'" style="cursor:pointer">
+          <td style="font-size:11px">${bsS(o.date)}</td>
+          <td style="font-size:11px">${o.date}</td>
+          <td class="tr fm">${RsC(+o.total)}</td>
+          <td class="tr cred">${oDam>0?RsC(oDam):'—'}</td>
+          <td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Cr':'Part'}</span></td>
+        </tr>
+        <tr style="display:none;background:var(--sur2)">
+          <td colspan="5" style="font-size:11px;color:var(--txs);padding:6px 8px">${oItems||'No items'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    ${orders.length>20?`<div style="font-size:12px;color:var(--txs);text-align:center;padding:8px">Showing latest 20 of ${orders.length} orders</div>`:''}
+    `:`<div class="empty" style="padding:14px"><div class="et">No orders in this period</div></div>`}
+  </div>
+
+  ${role==='owner'?`<div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn btn-sm" onclick="goTo('o-shop-report')">← Back to Shop Report</button>
+    <button class="btn btn-sm btn-red" onclick="goTo('o-credits')">💳 Record Payment</button>
+  </div>`:`<div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn btn-sm" onclick="goTo('s-customers')">← Back to Customers</button>
+    <button class="btn btn-sm btn-red" onclick="W.sale={shopId:${shopId},shopSearch:'',addingShop:false,ns:{name:'',address:'',phone:'',contact:''},date:'${toDate}',rows:[],pm:'cash',paidNow:0,msg:'',lastReceipt:null};goTo('s-sale')">🛒 New Sale</button>
+  </div>`}`;
+}
 // ════════════════════════════════════════
 
 // ── SALESMAN: NEW SALE ────────────────────
@@ -2391,6 +2535,7 @@ PG['s-customers']=async()=>{
           ${+s.balance>0?`<div style="font-size:11px;font-weight:700;color:var(--red)">Owes ${RsC(s.balance)}</div>`:''}
           ${+s.balance<0?`<div style="font-size:11px;font-weight:700;color:var(--grn)">Cr ${RsC(-s.balance)}</div>`:''}
           ${s.cr>0?`<div style="font-size:10px;color:var(--amb)">Credit: ${RsC(s.cr)}</div>`:''}
+          <button class="btn btn-sm btn-teal" style="margin-top:5px" onclick="viewShopDetail(${s.id},'salesman')">Detail →</button>
         </div>
       </div>
     </div>`).join('')}
