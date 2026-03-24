@@ -279,7 +279,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   </div>
 </div>
 <script>
-'use strict';
+
 const SB='https://daxzuimivrwbzrkusgdl.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRheHp1aW1pdnJ3Ynpya3VzZ2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM2MTYsImV4cCI6MjA4OTIxOTYxNn0.qZtnE7u-MwRYxocR0zZur0O5QZff06DuPbhEmMNLB-g';
 const OPIN='0000';
@@ -2800,6 +2800,7 @@ async function aSubmitSale(){
 
   const oids=orders.map(o=>o.id);
   const dets=allDets.filter(d=>oids.includes(d.order_id));
+}
 
   // Stock check — warn but don't block if no loads found (might be a data issue)
   for(const r of valid){
