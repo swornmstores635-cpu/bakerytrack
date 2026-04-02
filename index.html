@@ -272,7 +272,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
     <div class="lerr" id="lerr"></div>
   </div>
 </div>
-<div id="app">
+<div id="app" style="display:none;">
   <nav class="sidebar" id="sidebar"></nav>
   <div class="main-col">
     <div class="topbar to" id="topbar">
@@ -3261,6 +3261,50 @@ async function init(){
   },380);
 }
 init();
+  // LOGIN FUNCTION
+async function loginUser() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    document.getElementById("loginMsg").innerText = "Login failed!";
+    return;
+  }
+
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  checkUserRole();
+}
+
+// CHECK SESSION ON LOAD
+async function checkSession() {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    checkUserRole();
+  }
+}
+checkSession();
+
+// ROLE SYSTEM
+async function checkUserRole() {
+  const { data } = await supabase.auth.getUser();
+  const email = data.user.email;
+
+  if (email === "owner@bakery.com") {
+    console.log("Owner logged in");
+  } else {
+    alert("Salesman Mode Activated");
+    // Later we hide owner features here
+  }
+}
 </script>
 </body>
 </html>
