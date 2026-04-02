@@ -248,6 +248,16 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 </style>
 </head>
 <body>
+  <!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#b71c1c;color:white;">
+  <h1>🥐 BakeryTrack Login</h1>
+  <input id="email" placeholder="Email" style="padding:10px;margin:10px;border-radius:8px;border:none;width:220px;">
+  <input id="password" type="password" placeholder="Password" style="padding:10px;margin:10px;border-radius:8px;border:none;width:220px;">
+  <button onclick="loginUser()" style="padding:12px 30px;border:none;border-radius:10px;background:#00897b;color:white;font-size:16px;">
+    Login
+  </button>
+  <p id="loginMsg"></p>
+</div>
 <div id="ld"><div class="ld-ic">🥐</div><div class="ld-t">BakeryTrack Nepal</div><div class="ld-s">Loading...</div><div class="ld-sp"></div></div>
 <div id="login">
   <div class="lbox">
