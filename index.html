@@ -22,7 +22,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   --sh:0 1px 4px rgba(0,0,0,.08);--r:14px
 }
 /* LOADING */
-#ld{position:fixed;inset:0;background:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:9999;transition:opacity .35s}
+#ld{position:fixed;inset:0;background:var(--red);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:9999;transition:opacity .35s}
 #ld.out{opacity:0;pointer-events:none}
 .ld-ic{font-size:64px;margin-bottom:16px;animation:pp 1.4s ease-in-out infinite}
 .ld-t{font-size:24px;font-weight:800;letter-spacing:-.3px}.ld-s{font-size:13px;opacity:.75;margin-top:5px}
@@ -30,7 +30,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes pp{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes sp{to{transform:rotate(360deg)}}
 /* LOGIN */
-#login{position:fixed;inset:0;background:linear-gradient(160deg,#991b1b 0%,#b91c1c 60%,#7f1d1d 100%);display:none;align-items:center;justify-content:center;padding:16px;z-index:100;overflow-y:auto}
+#login{position:fixed;inset:0;background:linear-gradient(160deg,#991b1b 0%,#b91c1c 60%,#7f1d1d 100%);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100;overflow-y:auto}
 .lbox{background:#fff;border-radius:22px;padding:28px 20px 22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .lb-ic{font-size:52px;text-align:center;display:block}
 .lb-nm{font-size:24px;font-weight:800;color:var(--red);text-align:center;margin-top:8px;letter-spacing:-.3px}
@@ -279,6 +279,16 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   </div>
 </div>
 <script>
+// ── Emergency fallback: shows login after 2s no matter what ──
+(function(){
+  var _e=setTimeout(function(){
+    var ld=document.getElementById('ld');
+    var lg=document.getElementById('login');
+    if(ld)ld.style.cssText='display:none!important';
+    if(lg)lg.style.cssText='display:flex!important';
+  },2000);
+  window._clearEmergency=function(){clearTimeout(_e);};
+})();
 
 const SB='https://daxzuimivrwbzrkusgdl.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRheHp1aW1pdnJ3Ynpya3VzZ2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM2MTYsImV4cCI6MjA4OTIxOTYxNn0.qZtnE7u-MwRYxocR0zZur0O5QZff06DuPbhEmMNLB-g';
@@ -3232,6 +3242,7 @@ function bootApp(){
 }
 
 function showLogin(){
+  if(window._clearEmergency)window._clearEmergency();
   const ld=document.getElementById('ld');
   const lg=document.getElementById('login');
   if(ld){ld.style.transition='none';ld.style.opacity='0';ld.style.display='none';}
