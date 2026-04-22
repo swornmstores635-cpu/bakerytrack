@@ -550,7 +550,6 @@ function doLogin(role){
       // Show "ready offline" notification
       const lastSync=localStorage.getItem(CK+'lastSync');
       if(lastSync){
-        const min=Math.floor((Date.now()-parseInt(lastSync))/60000);
         if(S.role==='salesman'){
           const bar=document.createElement('div');
           bar.style.cssText='position:fixed;top:52px;left:0;right:0;background:#15803d;color:#fff;font-size:12px;font-weight:700;text-align:center;padding:6px;z-index:999';
@@ -1271,12 +1270,13 @@ PG['o-setup']=()=>Promise.resolve(`
 // ── OWNER: SETUP PRODUCTS ─────────────────
 PG['o-setup-prod']=async()=>{
   const [products,pps]=await Promise.all([getData('products','?order=sort_order,name'),getData('piece_prices','?order=product_id,pieces')]);
-  const st=W.prd||(W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''});
+  const st=W.prd||(W.prd={name:'',rate:'',cost:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''});
   return `
   ${st.msg?al('s',st.msg):''}
   <div class="card"><div class="ct">${st.edit?'Edit Product':'Add New Product'}</div>
     <div class="fg"><label class="fl">Product Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Bread" oninput="W.prd.name=this.value"/></div>
     <div class="fg"><label class="fl">Selling Rate (Rs.) — per packet</label><input type="number" inputmode="decimal" class="fi" step="0.01" value="${st.rate}" placeholder="0.00" oninput="W.prd.rate=this.value"/></div>
+    <div class="fg"><label class="fl">Cost Price (Rs.) — per packet <span style="font-weight:400;color:var(--txt)">(optional, used for profit report)</span></label><input type="number" inputmode="decimal" class="fi" step="0.01" value="${st.cost||''}" placeholder="0.00" oninput="W.prd.cost=this.value"/></div>
     <div class="fg"><label class="fl" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="hp" ${st.hasPiece?'checked':''} onchange="W.prd.hasPiece=this.checked;if(!this.checked)W.prd.ppRows=[];render()"/> Has piece pricing (partial returns)</label></div>
     ${st.hasPiece?`
     <div class="fg"><label class="fl">Pieces per packet</label><input type="number" inputmode="numeric" class="fi" min="1" max="20" value="${st.piecesPerPkt}" oninput="W.prd.piecesPerPkt=parseInt(this.value)||1;buildPpRows();render()"/></div>
@@ -1290,7 +1290,7 @@ PG['o-setup-prod']=async()=>{
     `:''}
     <div style="display:flex;gap:8px">
       <button class="btn btn-teal" style="flex:1" onclick="aSavePrd()">${st.edit?'Update':'Add Product'}</button>
-      ${st.edit?`<button class="btn btn-ghost" onclick="W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''};render()">Cancel</button>`:''}
+      ${st.edit?`<button class="btn btn-ghost" onclick="W.prd={name:'',rate:'',cost:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''};render()">Cancel</button>`:''}
     </div>
   </div>
   <div class="card"><div class="ct">All Products (${products.length})</div>
@@ -2800,7 +2800,6 @@ async function aSubmitSale(){
 
   const oids=orders.map(o=>o.id);
   const dets=allDets.filter(d=>oids.includes(d.order_id));
-}
 
   // Stock check — warn but don't block if no loads found (might be a data issue)
   for(const r of valid){
@@ -3048,7 +3047,7 @@ function buildPpRows(){const st=W.prd;if(!st.ppRows)st.ppRows=[];while(st.ppRows
 
 async function aSavePrd(){
   const st=W.prd;if(!st.name||!st.rate){st.msg='Name and rate required.';render();return;}
-  const data={name:st.name,rate:parseFloat(st.rate),cost:0,has_piece_pricing:st.hasPiece,pieces_per_packet:st.hasPiece?parseInt(st.piecesPerPkt):1,active:true};
+  const data={name:st.name,rate:parseFloat(st.rate),cost:parseFloat(st.cost)||0,has_piece_pricing:st.hasPiece,pieces_per_packet:st.hasPiece?parseInt(st.piecesPerPkt):1,active:true};
   let pid=st.edit;
   if(st.edit){await sbU('products',`?id=eq.${st.edit}`,data);}
   else{const res=await sbP('products',[data]);pid=res[0]?.id;}
@@ -3057,12 +3056,12 @@ async function aSavePrd(){
     const pp=st.ppRows.map((price,i)=>({product_id:pid,pieces:i+1,price:parseFloat(price)||0})).filter(x=>x.price>0);
     if(pp.length)await sbP('piece_prices',pp);
   }
-  W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:st.edit?'✓ Product updated.':'✓ Product added.'};render();
+  W.prd={name:'',rate:'',cost:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:st.edit?'✓ Product updated.':'✓ Product added.'};render();
 }
 async function aEditPrd(id){
   const [p,pp]=await Promise.all([sbG('products',`?id=eq.${id}`),sbG('piece_prices',`?product_id=eq.${id}&order=pieces`)]);
   const prod=p[0];if(!prod)return;
-  W.prd={name:prod.name,rate:prod.rate,hasPiece:prod.has_piece_pricing,piecesPerPkt:prod.pieces_per_packet||1,ppRows:pp.map(x=>x.price),edit:id,msg:''};render();
+  W.prd={name:prod.name,rate:prod.rate,cost:prod.cost||'',hasPiece:prod.has_piece_pricing,piecesPerPkt:prod.pieces_per_packet||1,ppRows:pp.map(x=>x.price),edit:id,msg:''};render();
 }
 
 async function aSaveVan(){
@@ -3152,7 +3151,7 @@ async function printLoadBill(vanId,date){
   const totalCrates=loads.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0);
   let sn=1;
   const html=`<!DOCTYPE html><html><head><title>Loading Bill</title>
-  <\style>
+  <style>
     body{font-family:Arial,sans-serif;font-size:12px;padding:20px;max-width:400px;margin:0 auto}
     h2{font-size:16px;font-weight:800;margin:0}
     .meta{font-size:11px;color:#666;margin:4px 0 12px}
@@ -3188,6 +3187,7 @@ async function printLoadBill(vanId,date){
   </div>
   </body></html>`;
   const w=window.open('','_blank');
+  if(!w){alert('Please allow popups for this site to print.');return;}
   w.document.write(html);
   w.document.close();
   w.print();
@@ -3209,7 +3209,7 @@ async function printRpt(date){
   const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
   const rev=orders.reduce((s,o)=>s+(+o.total||0),0);const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
   let html=`<!DOCTYPE html><html><head><title>BakeryTrack ${bsL(date)}</title>
-  <\style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#111}h1{font-size:16px;font-weight:800}h2{font-size:13px;margin:14px 0 5px;font-weight:700}.meta{color:#666;font-size:11px;margin:3px 0 10px}.sum{display:flex;gap:20px;padding:10px 14px;background:#f5f4f0;border-radius:5px;margin-bottom:12px}.si .sl{font-size:10px;color:#888;text-transform:uppercase;font-weight:700}.si .sv{font-size:16px;font-weight:800;margin-top:1px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:4px 7px;text-align:left}th{background:#f5f5f5;font-weight:700;font-size:10px;text-transform:uppercase}.tr{text-align:right}.bold{font-weight:700;background:#f9f9f9}<\/style></head><body>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#111}h1{font-size:16px;font-weight:800}h2{font-size:13px;margin:14px 0 5px;font-weight:700}.meta{color:#666;font-size:11px;margin:3px 0 10px}.sum{display:flex;gap:20px;padding:10px 14px;background:#f5f4f0;border-radius:5px;margin-bottom:12px}.si .sl{font-size:10px;color:#888;text-transform:uppercase;font-weight:700}.si .sv{font-size:16px;font-weight:800;margin-top:1px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ddd;padding:4px 7px;text-align:left}th{background:#f5f5f5;font-weight:700;font-size:10px;text-transform:uppercase}.tr{text-align:right}.bold{font-weight:700;background:#f9f9f9}<\/style></head><body>
   <h1>🥐 BakeryTrack Nepal — Daily Report</h1><div class="meta">BS: ${bsL(date)} · AD: ${date} · Printed: ${new Date().toLocaleString()}</div>
   <div class="sum"><div class="si"><div class="sl">Revenue</div><div class="sv">Rs.${rev.toFixed(2)}</div></div><div class="si"><div class="sl">Damage</div><div class="sv">Rs.${dam.toFixed(2)}</div></div><div class="si"><div class="sl">Orders</div><div class="sv">${orders.length}</div></div></div>
   <h2>Sales by Van</h2><table><tr><th>Van</th><th>Driver</th><th>Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th>Settlement</th></tr>
@@ -3217,7 +3217,7 @@ async function printRpt(date){
   <h2>Order Details</h2><table><tr><th>Van</th><th>Shop</th><th>Product</th><th class="tr">Sold</th><th class="tr">Ret.Pkt</th><th class="tr">Ret.Pcs</th><th class="tr">Deduction</th><th class="tr">Total</th><th>Pay</th></tr>
   ${orders.map(o=>{const v=vans.find(x=>x.id==o.van_id),sh=shops.find(x=>x.id==o.shop_id);const rows=dets.filter(d=>d.order_id==o.id).map(d=>{const p=products.find(x=>x.id==d.product_id);return`<tr><td>${v?.name||''}</td><td>${sh?.name||''}</td><td>${p?.name||''}</td><td class="tr">${d.qty_sold}</td><td class="tr">${d.packets_returned||0}</td><td class="tr">${d.pieces_returned||0}</td><td class="tr">Rs.${(+d.damage_deduction||0).toFixed(2)}</td><td class="tr">Rs.${(+d.line_total).toFixed(2)}</td><td>${o.payment_method}</td></tr>`;}).join('');return rows+`<tr class="bold"><td colspan="8">Order #${o.id} — ${sh?.name||''}</td><td class="tr">Rs.${(+o.total).toFixed(2)}</td></tr>`;}).join('')}</table>
   </body></html>`;
-  const w=window.open('','_blank');w.document.write(html);w.document.close();w.print();
+  const w=window.open('','_blank');if(!w){alert('Please allow popups for this site to print.');return;}w.document.write(html);w.document.close();w.print();
 }
 
 function bootApp(){
@@ -3231,24 +3231,30 @@ function bootApp(){
   processQ();
 }
 
+function showLogin(){
+  const ld=document.getElementById('ld');
+  const lg=document.getElementById('login');
+  if(ld){ld.style.transition='none';ld.style.opacity='0';ld.style.display='none';}
+  if(lg){lg.style.display='flex';}
+  if(!isOnline){
+    const b=document.querySelector('.lbox');
+    if(b)b.insertAdjacentHTML('afterbegin',`<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:#b45309;margin-bottom:14px">📵 Offline — login with your PIN, data is cached from last session</div>`);
+  }
+}
 async function init(){
-  // Hard timeout — if Supabase takes more than 4 seconds, show login anyway
-  const timeout=new Promise(r=>setTimeout(r,4000));
-  const load=isOnline
-    ? sbG('vans','?active=eq.true&order=name')
-        .then(vans=>{cs('vans',vans);cs('vans?active=eq.true&order=name',vans);})
-        .catch(()=>{})
-    : Promise.resolve();
-  await Promise.race([load,timeout]);
-  document.getElementById('ld').classList.add('out');
-  setTimeout(()=>{
-    document.getElementById('ld').style.display='none';
-    document.getElementById('login').style.display='flex';
-    if(!isOnline){
-      const b=document.querySelector('.lbox');
-      if(b)b.insertAdjacentHTML('afterbegin',`<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;color:#b45309;margin-bottom:14px">📵 Offline — login with your PIN, data is cached from last session</div>`);
+  // Always show login within 3 seconds no matter what
+  const safetyTimer=setTimeout(showLogin,3000);
+  try{
+    if(location.protocol==='file:'){isOnline=false;clearTimeout(safetyTimer);showLogin();return;}
+    if(isOnline){
+      const fetchTimer=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000));
+      const fetchVans=sbG('vans','?active=eq.true&order=name')
+        .then(vans=>{cs('vans',vans);cs('vans?active=eq.true&order=name',vans);});
+      await Promise.race([fetchVans,fetchTimer]).catch(()=>{});
     }
-  },380);
+  }catch(e){}
+  clearTimeout(safetyTimer);
+  showLogin();
 }
 init();
 </script>
