@@ -22,7 +22,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   --sh:0 1px 4px rgba(0,0,0,.08);--r:14px
 }
 /* LOADING */
-#ld{position:fixed;inset:0;background:var(--red);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:9999;transition:opacity .35s}
+#ld{position:fixed;inset:0;background:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;z-index:9999;transition:opacity .35s}
 #ld.out{opacity:0;pointer-events:none}
 .ld-ic{font-size:64px;margin-bottom:16px;animation:pp 1.4s ease-in-out infinite}
 .ld-t{font-size:24px;font-weight:800;letter-spacing:-.3px}.ld-s{font-size:13px;opacity:.75;margin-top:5px}
@@ -30,7 +30,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 @keyframes pp{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes sp{to{transform:rotate(360deg)}}
 /* LOGIN */
-#login{position:fixed;inset:0;background:linear-gradient(160deg,#991b1b 0%,#b91c1c 60%,#7f1d1d 100%);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100;overflow-y:auto}
+#login{position:fixed;inset:0;background:linear-gradient(160deg,#991b1b 0%,#b91c1c 60%,#7f1d1d 100%);display:none;align-items:center;justify-content:center;padding:16px;z-index:100;overflow-y:auto}
 .lbox{background:#fff;border-radius:22px;padding:28px 20px 22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .lb-ic{font-size:52px;text-align:center;display:block}
 .lb-nm{font-size:24px;font-weight:800;color:var(--red);text-align:center;margin-top:8px;letter-spacing:-.3px}
@@ -99,6 +99,1298 @@ select.li{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .bnb.ao{color:var(--teal)}.bnb.as{color:var(--red)}
 .bn-ic{font-size:24px;line-height:1}
 /* ALERTS */
+.al{padding:11px 14px;border-radius:13px;font-size:13px;font-weight:500;margin-bottom:12px;border-width:1px;border-style:solid;line-height:1.5}
+.al-s{background:var(--grn-l);color:var(--grn);border-color:var(--grn-b)}
+.al-e{background:var(--red-l);color:var(--red);border-color:var(--red-b)}
+.al-w{background:var(--amb-l);color:var(--amb);border-color:var(--amb-b)}
+.al-i{background:var(--teal-l);color:var(--teal);border-color:var(--teal-b)}
+/* CARDS */
+.card{background:var(--sur);border-radius:var(--r);border:1px solid var(--bd);padding:15px;margin-bottom:12px;box-shadow:var(--sh)}
+.ct{font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.05em;margin-bottom:13px}
+.chdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.chdr .ct{margin-bottom:0}
+/* METRICS */
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.mg4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:600px){.mg4{grid-template-columns:1fr 1fr}}
+.mc{background:var(--sur);border-radius:13px;border:1px solid var(--bd);padding:13px 14px;box-shadow:var(--sh)}
+.ml{font-size:11px;color:var(--txs);font-weight:500;margin-bottom:5px}
+.mv{font-size:22px;font-weight:800;line-height:1;letter-spacing:-.5px}
+.ms{font-size:11px;color:var(--txs);margin-top:4px}
+.cteal{color:var(--teal)}.cgrn{color:var(--grn)}.cred{color:var(--red)}.camb{color:var(--amb)}.cmut{color:var(--txs)}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.bg{background:var(--grn-l);color:var(--grn)}.br{background:var(--red-l);color:var(--red)}.ba{background:var(--amb-l);color:var(--amb)}.bt{background:var(--teal-l);color:var(--teal)}.bm{background:var(--sur2);color:var(--txs)}.bp{background:var(--pur-l);color:var(--pur)}
+/* FORMS */
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.fi{width:100%;padding:12px 14px;border:1.5px solid var(--bd2);border-radius:12px;font-size:15px;background:var(--sur);color:var(--tx);font-family:inherit;-webkit-appearance:none;appearance:none;outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--teal)}
+select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23a8a29e' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.dh{font-size:11px;color:var(--txs);font-weight:600;margin-top:4px}
+/* ── SEARCH BOX ── */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.search-inp{width:100%;padding:11px 12px 11px 38px;border:1.5px solid var(--bd2);border-radius:12px;font-size:14px;background:var(--sur);color:var(--tx);font-family:inherit;outline:none;-webkit-appearance:none}
+.search-inp:focus{border-color:var(--teal)}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 15px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid var(--bd2);background:var(--sur);color:var(--tx);font-family:inherit;transition:all .12s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red)}.btn-red:active{background:var(--red-d)}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-grn{background:var(--grn);color:#fff;border-color:var(--grn)}
+.btn-amb{background:var(--amb);color:#fff;border-color:var(--amb)}
+.btn-full{width:100%;padding:13px;font-size:14px}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-ghost{background:none;border-color:var(--bd2);color:var(--txs)}
+.btn-ico{padding:7px;border-radius:8px;border:1px solid var(--bd2);background:var(--sur);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center}
+/* ── TABLES ── */
+.tblw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:10px;font-weight:700;color:var(--txs);text-align:left;padding:7px 8px;border-bottom:1.5px solid var(--bd);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.tbl td{padding:9px 8px;border-bottom:1px solid var(--bd);color:var(--tx);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--sur2)}
+.tr{text-align:right}.fm{font-weight:700}
+/* ── PROGRESS ── */
+.pbw{background:rgba(0,0,0,.07);border-radius:100px;height:5px;overflow:hidden;margin-top:4px}
+.pb{height:100%;border-radius:100px;background:var(--teal);transition:width .3s}
+.pb.low{background:var(--amb)}.pb.crit{background:var(--red)}
+/* ── SALE PRODUCT CARD ── */
+.ptap{background:var(--sur2);border-radius:12px;padding:12px 13px;margin-bottom:8px;border:1.5px solid var(--bd);cursor:pointer;transition:all .12s}
+.ptap:hover{border-color:var(--teal)}
+.ptap.added{border-color:var(--teal);background:var(--teal-l)}
+.pt-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pt-nm{font-size:14px;font-weight:700}
+.pt-meta{font-size:11px;color:var(--txs);margin-top:2px}
+/* ── RETURN SECTION ── */
+.ret-section{margin-top:10px;padding:10px 12px;background:rgba(180,83,9,.07);border-radius:8px;border:1px solid rgba(180,83,9,.2)}
+.ret-title{font-size:11px;font-weight:700;color:var(--amb);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.ret-grid{display:grid;gap:8px}
+.ret-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini-lbl{font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+.mini-inp{width:100%;padding:9px 10px;border:1.5px solid var(--bd2);border-radius:8px;font-size:18px;font-weight:700;background:var(--sur);color:var(--tx);font-family:inherit;text-align:right;-webkit-appearance:none;outline:none}
+.mini-inp:focus{border-color:var(--teal)}
+.sold-inp{width:100%;padding:9px 10px;border:1.5px solid var(--bd2);border-radius:8px;font-size:18px;font-weight:700;background:var(--sur);color:var(--tx);font-family:inherit;text-align:right;-webkit-appearance:none;outline:none}
+.sold-inp:focus{border-color:var(--teal)}
+.pt-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.deduction-hint{font-size:11px;color:var(--amb);font-weight:600;margin-top:4px}
+/* ── ORDER TOTAL ── */
+.total-bar{background:var(--teal-l);border:2px solid var(--teal-b);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin:13px 0}
+.tb-lbl{font-size:13px;font-weight:700;color:var(--teal)}
+.tb-val{font-size:28px;font-weight:800;color:var(--teal);letter-spacing:-.5px}
+.pay-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:11px}
+.pay-opt{padding:9px 4px;border-radius:8px;border:1.5px solid var(--bd2);background:var(--sur);cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:var(--txs);font-family:inherit;transition:all .12s}
+.pay-opt.sel{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
+.sum-line{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.sum-line:last-child{border-bottom:none;font-weight:700;font-size:14px}
+/* ── VAN HEADER ── */
+.van-hdr{background:var(--red);border-radius:14px;padding:15px;margin-bottom:11px;color:#fff;box-shadow:0 4px 14px rgba(185,28,28,.22)}
+.vh-t{font-size:17px;font-weight:800;letter-spacing:-.2px}
+.vh-s{font-size:11px;opacity:.8;margin-top:2px}
+.vh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}
+.vhs{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 6px;text-align:center}
+.vhs-v{font-size:18px;font-weight:800}
+.vhs-l{font-size:9px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+/* ── SETTLEMENT ── */
+.settle-card{border-radius:14px;padding:16px;margin-bottom:11px;border:2px solid}
+.settle-pending{background:#fffbeb;border-color:var(--amb-b)}
+.settle-done{background:var(--grn-l);border-color:var(--grn-b)}
+.settle-short{background:var(--red-l);border-color:var(--red-b)}
+.settle-title{font-size:14px;font-weight:800;margin-bottom:4px}
+.settle-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.07);font-size:13px}
+.settle-row:last-child{border-bottom:none;font-weight:700;font-size:14px}
+.big-diff{font-size:28px;font-weight:800;text-align:center;padding:14px 0}
+/* ── SHOP LIST ── */
+.shop-group{margin-bottom:10px}
+.shop-group-label{font-size:10px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.06em;padding:6px 4px 4px}
+.shop-item{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;background:var(--sur);border-radius:10px;margin-bottom:6px;border:1.5px solid var(--bd);cursor:pointer;transition:all .12s}
+.shop-item:hover,.shop-item:active{border-color:var(--teal);background:var(--teal-l)}
+.shop-item.sel{border-color:var(--teal);background:var(--teal-l)}
+.si-nm{font-size:14px;font-weight:700}
+.si-dt{font-size:11px;color:var(--txs);margin-top:2px}
+.si-bal{text-align:right}
+/* ── STOCK ROWS ── */
+.srow{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)}
+.srow:last-child{border-bottom:none}
+.sr-l{flex:1;min-width:0;padding-right:10px}
+.sr-nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-r{display:flex;gap:12px;flex-shrink:0}
+.sr-n{text-align:center}
+.sr-n-l{font-size:9px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.03em}
+.sr-n-v{font-size:16px;font-weight:800;margin-top:1px}
+/* ── SETUP ── */
+.si-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)}
+.si-item:last-child{border-bottom:none}
+.si-btns{display:flex;gap:6px;flex-shrink:0}
+/* ── MORE GRID ── */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(min-width:580px){.mgrid{grid-template-columns:repeat(3,1fr)}}
+.mc-btn{background:var(--sur);border:1px solid var(--bd);border-radius:14px;padding:14px 12px;cursor:pointer;font-family:inherit;text-align:left;display:block;width:100%;box-shadow:var(--sh);transition:all .12s}
+.mc-btn:active{transform:scale(.98);background:var(--sur2)}
+.mc-ic{font-size:24px;margin-bottom:7px;display:block}
+.mc-t{font-size:13px;font-weight:700;color:var(--tx);display:block}
+.mc-s{font-size:11px;color:var(--txs);margin-top:2px;display:block}
+/* Row-style mc-btn for home pages */
+.mc-row{display:flex;align-items:center;gap:14px;padding:15px 14px}
+.mc-row .mc-ic{margin-bottom:0;font-size:26px;flex-shrink:0}
+.mc-row .mc-body{display:flex;flex-direction:column;gap:1px}
+/* ── CLOSE DAY ── */
+.close-day-btn{background:var(--amb);color:#fff;border:none;border-radius:14px;padding:16px;width:100%;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:11px;box-shadow:0 4px 14px rgba(180,83,9,.3)}
+/* ── MISC ── */
+.off-bar{background:var(--amb-l);border:1px solid var(--amb-b);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600;color:var(--amb);display:flex;align-items:center;gap:7px}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;letter-spacing:.05em;margin:3px 0 8px}
+.empty{text-align:center;padding:34px 18px;color:var(--txs)}
+.ei{font-size:38px;margin-bottom:10px}.et{font-size:14px;font-weight:600}.es{font-size:12px;margin-top:4px;color:var(--txt)}
+.piece-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.piece-table td{padding:4px 6px;border:1px solid var(--bd)}
+.piece-table th{padding:4px 6px;border:1px solid var(--bd);background:var(--sur2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div id="ld"><div class="ld-ic">🥐</div><div class="ld-t">BakeryTrack Nepal</div><div class="ld-s">Loading...</div><div class="ld-sp"></div></div>
+<div id="login">
+  <div class="lbox">
+    <span class="lb-ic">🥐</span>
+    <div class="lb-nm">BakeryTrack</div>
+    <div class="lb-tg">Nepal Distribution Management</div>
+    <div class="rg">
+      <button class="rc" id="rc-o" onclick="pickRole('owner')"><span class="rc-ic">👑</span><span class="rc-t">Owner</span><span class="rc-s">Full Dashboard</span></button>
+      <button class="rc" id="rc-s" onclick="pickRole('salesman')"><span class="rc-ic">🚐</span><span class="rc-t">Salesman</span><span class="rc-s">Van View</span></button>
+    </div>
+    <div id="lf"></div>
+    <div class="lerr" id="lerr"></div>
+  </div>
+</div>
+<div id="app">
+  <nav class="sidebar" id="sidebar"></nav>
+  <div class="main-col">
+    <div class="topbar to" id="topbar">
+      <button class="tb-bk" id="tb-bk" onclick="goBack()" style="display:none">←</button>
+      <div class="tb-c"><div class="tb-t" id="tb-t">BakeryTrack</div><div class="tb-s" id="tb-s"></div></div>
+      <div class="tb-r">
+        <div class="tb-bs" id="hbs"></div>
+        <div class="tb-ad" id="had"></div>
+        <button class="tb-sy" onclick="manualSync()"><span class="sd" id="sd"></span><span id="st">Synced</span></button>
+      </div>
+    </div>
+    <div class="pw" id="pw"></div>
+    <nav class="bot-nav" id="bnav"></nav>
+  </div>
+</div>
+<script>
+
+const SB='https://daxzuimivrwbzrkusgdl.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRheHp1aW1pdnJ3Ynpya3VzZ2RsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NDM2MTYsImV4cCI6MjA4OTIxOTYxNn0.qZtnE7u-MwRYxocR0zZur0O5QZff06DuPbhEmMNLB-g';
+const OPIN='0000';
+// ── Nepali Date ──
+const BSD=[[2000,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2001,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2002,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2003,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2004,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2005,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2006,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2007,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2008,[0,31,31,31,32,31,31,29,30,30,29,29,31]],[2009,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2010,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2011,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2012,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2013,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2014,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2015,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2016,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2017,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2018,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2019,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2020,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2021,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2022,[0,31,32,31,32,31,30,30,30,29,29,30,30]],[2023,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2024,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2025,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2026,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2027,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2028,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2029,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2030,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2031,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2032,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2033,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2034,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2035,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2036,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2037,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2038,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2039,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2040,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2041,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2042,[0,31,32,31,32,31,30,30,29,30,29,30,30]],[2043,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2044,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2045,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2046,[0,31,32,31,32,31,30,30,30,29,29,30,30]],[2047,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2048,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2049,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2050,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2051,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2052,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2053,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2054,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2055,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2056,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2057,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2058,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2059,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2060,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2061,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2062,[0,31,32,31,32,31,30,30,30,29,29,30,30]],[2063,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2064,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2065,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2066,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2067,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2068,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2069,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2070,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2071,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2072,[0,31,31,31,32,31,31,29,30,30,29,30,30]],[2073,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2074,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2075,[0,31,32,31,32,31,30,30,30,29,29,30,31]],[2076,[0,31,31,31,32,31,31,30,29,30,29,30,30]],[2077,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2078,[0,31,31,32,32,31,30,30,30,29,29,30,30]],[2079,[0,31,32,31,32,31,30,30,30,29,30,29,31]],[2080,[0,30,32,31,32,31,30,30,30,29,30,29,31]],[2081,[0,31,31,32,31,31,31,30,29,30,29,30,30]],[2082,[0,31,31,32,32,31,30,30,29,30,29,30,30]],[2083,[0,31,32,31,32,31,30,30,30,29,29,30,31]]];
+const BSM=['Baisakh','Jestha','Ashadh','Shrawan','Bhadra','Ashwin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra'];
+function adToBS(ad){const d=new Date(ad+'T00:00:00'),ref=new Date(1943,3,14);let days=Math.floor((d-ref)/86400000),y=2000,m=1,dd=1;let row=BSD.find(r=>r[0]===y);while(days>0){if(!row)break;const dim=row[1][m];if(dd+days<=dim){dd+=days;days=0;}else{days-=(dim-dd+1);dd=1;if(++m>12){m=1;y++;row=BSD.find(r=>r[0]===y);}}}return{y,m,d:dd};}
+function bsL(ad){try{const b=adToBS(ad);return`${b.y} ${BSM[b.m-1]} ${b.d}`;}catch(e){return ad;}}
+function bsS(ad){try{const b=adToBS(ad);return`${b.y}/${String(b.m).padStart(2,'0')}/${String(b.d).padStart(2,'0')}`;}catch(e){return ad;}}
+function tmrw(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
+const TODAY=new Date().toISOString().split('T')[0];
+
+// ── Currency ──
+function Rs(n){return'Rs. '+parseFloat(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function RsC(n){const v=parseFloat(n||0);if(v>=100000)return'Rs. '+(v/100000).toFixed(2)+'L';if(v>=1000)return'Rs. '+(v/1000).toFixed(1)+'K';return'Rs. '+v.toFixed(2);}
+
+// ── Piece pricing engine ──
+// Returns deduction amount for given packets and pieces returned
+function calcDeduction(product, piecePrices, packetsReturned, piecesReturned){
+  const packetsDeduction = (packetsReturned||0) * product.rate;
+  let piecesDeduction = 0;
+  if(product.has_piece_pricing && piecesReturned > 0){
+    const pp = piecePrices.filter(p=>p.product_id===product.id).sort((a,b)=>a.pieces-b.pieces);
+    // Find exact match or closest lower
+    const match = pp.find(p=>p.pieces===piecesReturned);
+    if(match){
+      piecesDeduction = match.price;
+    } else {
+      // Find the entry with the highest pieces that is <= piecesReturned
+      const lower = pp.filter(p=>p.pieces<=piecesReturned).sort((a,b)=>b.pieces-a.pieces)[0];
+      if(lower) piecesDeduction = lower.price;
+      else piecesDeduction = piecesReturned * (product.rate / product.pieces_per_packet);
+    }
+  } else if(!product.has_piece_pricing && piecesReturned > 0){
+    // packet only — pieces returned = full packets effectively
+    piecesDeduction = piecesReturned * product.rate;
+  }
+  return packetsDeduction + piecesDeduction;
+}
+
+// ── Supabase ──
+async function sb(t,method='GET',body=null,q=''){
+  const url=`${SB}/rest/v1/${t}${q}`;
+  const h={'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK};
+  if(method==='POST')h['Prefer']='return=representation';
+  const r=await fetch(url,{method,headers:h,body:body?JSON.stringify(body):null});
+  if(!r.ok){const e=await r.text();throw new Error(e);}
+  if(method==='DELETE'||r.status===204)return[];
+  return r.json();
+}
+const sbG=(t,q='')=>sb(t,'GET',null,q);
+const sbP=(t,b)=>sb(t,'POST',b);
+const sbU=(t,q,b)=>sb(t,'PATCH',b,q);
+const sbD=(t,q)=>sb(t,'DELETE',null,q);
+
+// ── Cache & Queue ──────────────────────────
+const CK='bkt4_';
+const cs=(k,v)=>localStorage.setItem(CK+k,JSON.stringify({d:v,t:Date.now()}));
+const cg=k=>{const r=JSON.parse(localStorage.getItem(CK+k)||'null');return r?r.d:null;};
+function qGet(){return JSON.parse(localStorage.getItem(CK+'q')||'[]');}
+function qAdd(op){const q=qGet();q.push({...op,_id:Date.now()+Math.random()});localStorage.setItem(CK+'q',JSON.stringify(q));}
+function qDel(ids){localStorage.setItem(CK+'q',JSON.stringify(qGet().filter(o=>!ids.includes(o._id))));}
+
+// ── Pending local sales (full order objects saved offline) ──
+function lsGet(){return JSON.parse(localStorage.getItem(CK+'ls')||'[]');}
+function lsAdd(order,details){
+  const ls=lsGet();
+  const lid='local_'+(Date.now()+Math.random());
+  ls.push({lid,order,details,ts:Date.now()});
+  localStorage.setItem(CK+'ls',JSON.stringify(ls));
+  return lid;
+}
+function lsDel(lids){
+  localStorage.setItem(CK+'ls',JSON.stringify(lsGet().filter(s=>!lids.includes(s.lid))));
+}
+
+let isOnline=navigator.onLine;
+window.addEventListener('online',()=>{isOnline=true;updSync();processQ();});
+window.addEventListener('offline',()=>{isOnline=false;updSync();});
+
+function updSync(){
+  const el=document.getElementById('sd'),tl=document.getElementById('st');if(!el)return;
+  const q=qGet(),ls=lsGet();
+  const pending=q.length+ls.length;
+  if(!isOnline){el.className='sd err';if(tl)tl.textContent='Offline';}
+  else if(pending>0){el.className='sd pend';if(tl)tl.textContent=pending+' pending';}
+  else{el.className='sd';if(tl)tl.textContent='Synced';}
+}
+
+async function processQ(){
+  if(!isOnline)return;
+  // Process local sales first
+  const ls=lsGet();
+  const synced=[];
+  for(const s of ls){
+    try{
+      const res=await sbP('orders',[s.order]);
+      const oid=res[0]?.id;
+      if(oid){
+        await sbP('order_details',s.details.map(d=>({...d,order_id:oid})));
+        synced.push(s.lid);
+      }
+    }catch(e){console.warn('Local sale sync fail:',e.message);}
+  }
+  if(synced.length)lsDel(synced);
+  // Process general queue
+  const q=qGet();if(!q.length){updSync();return;}
+  const done=[];
+  for(const op of q){
+    try{
+      if(op.type==='ins')await sbP(op.table,op.data);
+      else if(op.type==='upd')await sbU(op.table,op.q,op.data);
+      done.push(op._id);
+    }catch(e){console.warn('Queue sync fail:',e.message);}
+  }
+  if(done.length)qDel(done);
+  if(synced.length||done.length){await deepCache(S.vanId);render();}
+  updSync();
+}
+
+async function manualSync(){
+  if(!isOnline){
+    alert('You are offline.\n\nAll sales are saved on this phone.\nThey will automatically sync to the server when you have internet connection.\n\nTotal pending: '+(qGet().length+lsGet().length)+' items.');
+    return;
+  }
+  await processQ();
+  await deepCache(S.vanId);
+  render();
+}
+
+// ── Deep cache — loads EVERYTHING needed for a salesman's day ──
+// Call this once at login with internet. After that, works fully offline.
+async function deepCache(vanId){
+  if(!isOnline)return;
+  try{
+    const tmrwDate=tmrw();
+    // Core data
+    const [products,pricePts,vans,areas,shops,credits]=await Promise.all([
+      sbG('products','?active=eq.true&order=sort_order,name'),
+      sbG('piece_prices','?order=product_id,pieces'),
+      sbG('vans','?active=eq.true&order=name'),
+      sbG('areas'),
+      sbG('shops','?active=eq.true&order=name'),
+      sbG('shop_credits')
+    ]);
+    cs('products?active=eq.true&order=sort_order,name',products);
+    cs('products',products);
+    cs('piece_prices?order=product_id,pieces',pricePts);
+    cs('piece_prices',pricePts);
+    cs('vans',vans);cs('vans?active=eq.true&order=name',vans);
+    cs('areas',areas);
+    cs('shops?active=eq.true&order=name',shops);
+    cs('shops',shops);
+    cs('shop_credits',credits);
+    if(vanId){
+      const vShops=shops.filter(s=>s.van_id==vanId);
+      cs(`shops?van_id=eq.${vanId}&active=eq.true&order=name`,vShops);
+      const vAreas=areas.filter(a=>a.van_id==vanId);
+      cs(`areas?van_id=eq.${vanId}&order=sort_order,name`,vAreas);
+      // Load TODAY and TOMORROW loads
+      const [loads,tmrwLoads,orders,tmrwOrders,carries,settle]=await Promise.all([
+        sbG('van_loads',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+        sbG('van_loads',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`),
+        sbG('orders',`?date=eq.${TODAY}&van_id=eq.${vanId}`),
+        sbG('orders',`?date=eq.${tmrwDate}&van_id=eq.${vanId}`),
+        sbG('carryover',`?to_date=eq.${tmrwDate}&van_id=eq.${vanId}`),
+        sbG('settlements',`?date=eq.${TODAY}&van_id=eq.${vanId}`)
+      ]);
+      cs(`van_loads?date=eq.${TODAY}&van_id=eq.${vanId}`,loads);
+      cs(`van_loads?date=eq.${tmrwDate}&van_id=eq.${vanId}`,tmrwLoads);
+      cs(`orders?date=eq.${TODAY}&van_id=eq.${vanId}`,orders);
+      cs(`orders?date=eq.${tmrwDate}&van_id=eq.${vanId}`,tmrwOrders);
+      cs(`carryover?to_date=eq.${tmrwDate}&van_id=eq.${vanId}`,carries);
+      cs(`settlements?date=eq.${TODAY}&van_id=eq.${vanId}`,settle);
+      // Cache order details for today's orders
+      const allOrders=[...orders,...tmrwOrders];
+      if(allOrders.length){
+        const dets=await sbG('order_details',`?order_id=in.(${allOrders.map(o=>o.id).join(',')})`);
+        cs('order_details',dets);
+      } else {
+        cs('order_details',[]);
+      }
+    }
+    localStorage.setItem(CK+'lastSync',Date.now().toString());
+    console.log('Deep cache complete');
+  }catch(e){console.warn('Deep cache error:',e.message);}
+}
+
+async function refreshCache(){await deepCache(S.vanId);}
+
+// Smart getData — tries live, falls back to cache, returns [] if nothing
+async function getData(t,q=''){
+  // First try to get from cache (for offline-first approach)
+  const cached=cg(t+q);
+  if(!isOnline){
+    // Offline — merge local pending sales into orders cache
+    if(t==='orders'&&q.includes('van_id')){
+      const ls=lsGet();
+      const base=cached||[];
+      const localOrders=ls.map(s=>({...s.order,id:'local_'+s.lid,_local:true}));
+      return [...base,...localOrders];
+    }
+    if(t==='order_details'){
+      const ls=lsGet();
+      const base=cached||[];
+      const localDets=ls.flatMap(s=>s.details.map(d=>({...d,order_id:'local_'+s.lid,_local:true})));
+      return [...base,...localDets];
+    }
+    return cached||[];
+  }
+  // Online — try live, cache result, fall back to cache on error
+  try{
+    const d=await sbG(t,q);
+    cs(t+q,d);
+    return d;
+  }catch(e){
+    return cached||[];
+  }
+}
+
+// write — saves to server if online, queues locally if offline
+async function write(t,data,uq=null){
+  if(isOnline){
+    try{return uq?await sbU(t,uq,data):await sbP(t,data);}
+    catch(e){console.warn('Write failed, queuing:',e.message);}
+  }
+  qAdd({type:uq?'upd':'ins',table:t,data,q:uq});
+  updSync();
+  return Array.isArray(data)?data:[data];
+}
+
+// ── Session ──
+let S={role:null,vanId:null,vanName:'',driver:''};
+function pickRole(role){
+  document.getElementById('rc-o').classList.toggle('sel',role==='owner');
+  document.getElementById('rc-s').classList.toggle('sel',role==='salesman');
+  document.getElementById('lerr').textContent='';
+  const vans=cg('vans')||[];
+  if(role==='owner'){
+    document.getElementById('lf').innerHTML=`<div class="lf"><label class="ll">Owner PIN</label><input type="password" inputmode="numeric" maxlength="6" class="li pin" id="lpin" placeholder="• • • •" onkeydown="if(event.key==='Enter')doLogin('owner')"/></div><button class="lbtn" onclick="doLogin('owner')">Sign In as Owner</button><div class="lhint">Default PIN: 0000</div>`;
+  } else {
+    document.getElementById('lf').innerHTML=`<div class="lf"><label class="ll">Your Van</label><select class="li" id="lvan"><option value="">— Select your van —</option>${vans.map(v=>`<option value="${v.id}" data-pin="${v.pin}">${v.name} — ${v.driver}</option>`).join('')}</select></div><div class="lf"><label class="ll">PIN</label><input type="password" inputmode="numeric" maxlength="6" class="li pin" id="lpin" placeholder="• • • •" onkeydown="if(event.key==='Enter')doLogin('salesman')"/></div><button class="lbtn" onclick="doLogin('salesman')">Sign In as Salesman</button><div class="lhint">Demo PINs: 1111 · 2222 · 3333</div>`;
+  }
+  setTimeout(()=>document.getElementById('lpin')?.focus(),80);
+}
+function doLogin(role){
+  const pin=(document.getElementById('lpin')||{}).value||'';
+  const err=document.getElementById('lerr');
+  if(role==='owner'){
+    if(pin!==OPIN){err.textContent='Incorrect PIN.';return;}
+    S={role:'owner',vanId:null,vanName:'',driver:''};
+  } else {
+    const sel=document.getElementById('lvan');
+    const opt=sel?sel.options[sel.selectedIndex]:null;
+    const vid=parseInt(sel?.value||0);
+    if(!vid){err.textContent='Select your van.';return;}
+    if(!opt||opt.dataset.pin!==pin){err.textContent='Incorrect PIN.';return;}
+    const van=(cg('vans')||[]).find(v=>v.id===vid)||{};
+    S={role:'salesman',vanId:vid,vanName:van.name||'',driver:van.driver||''};
+  }
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('show');
+  bootApp();
+  // Deep cache in background after login — this is the key for offline work
+  if(isOnline){
+    deepCache(S.vanId).then(()=>{
+      updSync();
+      // Show "ready offline" notification
+      const lastSync=localStorage.getItem(CK+'lastSync');
+      if(lastSync){
+        const min=Math.floor((Date.now()-parseInt(lastSync))/60000);
+        if(S.role==='salesman'){
+          const bar=document.createElement('div');
+          bar.style.cssText='position:fixed;top:52px;left:0;right:0;background:#15803d;color:#fff;font-size:12px;font-weight:700;text-align:center;padding:6px;z-index:999';
+          bar.textContent='✓ Data loaded — app will work offline all day';
+          document.body.appendChild(bar);
+          setTimeout(()=>bar.remove(),4000);
+        }
+      }
+    });
+  } else {
+    // Offline login — check if we have cached data
+    const lastSync=localStorage.getItem(CK+'lastSync');
+    if(lastSync){
+      const hrs=Math.floor((Date.now()-parseInt(lastSync))/3600000);
+      const bar=document.createElement('div');
+      bar.style.cssText='position:fixed;top:52px;left:0;right:0;background:var(--amb);color:#fff;font-size:12px;font-weight:700;text-align:center;padding:6px;z-index:999';
+      bar.textContent='📵 Offline mode — using data from '+hrs+'h ago. Sales will sync when connected.';
+      document.body.appendChild(bar);
+      setTimeout(()=>bar.remove(),6000);
+    }
+  }
+}
+function logout(){
+  S={role:null,vanId:null};
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login').style.display='flex';
+  document.getElementById('lf').innerHTML='';
+  ['rc-o','rc-s'].forEach(id=>document.getElementById(id).classList.remove('sel'));
+  W={};curPage='';pStack=[];
+}
+
+// ── Navigation ──
+let curPage='',pStack=[],W={},_charts=[];
+function kc(){_charts.forEach(c=>{try{c.destroy();}catch(e){}});_charts=[];}
+const TITLES={
+  'o-dash':'Dashboard','o-rpt':'Daily Report','o-profit':'Profit Report',
+  'o-prod':'Production','o-load':'Van Loading','o-stock':'Van Stock',
+  'o-carry':'Stock Carryover','o-credits':'Shop Credits','o-settle':'Settlement',
+  'o-history':'Sales History','o-setup':'Setup','o-setup-prod':'Products',
+  'o-setup-vans':'Vans & PINs','o-setup-shops':'Shops','o-setup-areas':'Areas','o-more':'More',
+  'o-ops-mobile':'Operations','o-fin-mobile':'Finance','o-home-ops':'Operations','o-home-fin':'Finance','o-home-analytics':'Reports','o-home-setup':'Setup',
+  'o-analytics':'Analytics','o-van-report':'Van Performance','o-shop-report':'Shop Report','o-period-report':'Period Report',
+  'o-shop-detail':'Shop Detail','s-shop-detail':'Shop Detail',
+  'o-home-ops':'Operations','o-home-fin':'Finance','o-home-analytics':'Reports','o-home-setup':'Setup','o-more':'More',
+  's-sale':'New Sale','s-stock':'My Stock','s-credits':'Shop Credits',
+  's-history':'My Sales','s-close':'Close My Day','s-more':'More','s-performance':'My Performance','s-customers':'My Customers'
+};
+const ROOT_O=['o-dash','o-home-ops','o-home-fin','o-home-analytics','o-home-setup'];
+const ROOT_S=['s-sale','s-stock','s-credits','s-history','s-more','s-performance','s-customers'];
+const OBN=[
+  {id:'o-dash',l:'Dashboard',ic:'📊'},
+  {id:'o-home-ops',l:'Operations',ic:'🚐'},
+  {id:'o-home-fin',l:'Finance',ic:'💰'},
+  {id:'o-home-analytics',l:'Reports',ic:'📈'},
+  {id:'o-home-setup',l:'Setup',ic:'⚙️'}
+];
+const SBN=[{id:'s-sale',l:'New Sale',ic:'🛒'},{id:'s-stock',l:'My Stock',ic:'📦'},{id:'s-performance',l:'My Stats',ic:'📊'},{id:'s-customers',l:'Customers',ic:'🏪'},{id:'s-more',l:'More',ic:'⚙️'}];
+const ONAV=[
+  {s:'Overview',i:[{id:'o-dash',l:'Dashboard',ic:'📊'},{id:'o-rpt',l:'Daily Report',ic:'📈'},{id:'o-profit',l:'Profit Report',ic:'💰'},{id:'o-analytics',l:'Analytics',ic:'📉'}]},
+  {s:'Operations',i:[{id:'o-prod',l:'Production',ic:'🏭'},{id:'o-load',l:'Van Loading',ic:'🚐'},{id:'o-stock',l:'Van Stock',ic:'📦'},{id:'o-carry',l:'Carryover',ic:'🔄'}]},
+  {s:'Finance',i:[{id:'o-settle',l:'Settlement',ic:'💰'},{id:'o-credits',l:'Shop Credits',ic:'💳'},{id:'o-history',l:'Sales History',ic:'🗂'}]},
+  {s:'Setup',i:[{id:'o-setup',l:'Setup',ic:'⚙️'}]},
+];
+
+function goTo(p,push=true){
+  kc();
+  if(_dashRefresh){clearInterval(_dashRefresh);_dashRefresh=null;}
+  if(push&&curPage&&curPage!==p)pStack.push(curPage);
+  curPage=p;
+  const root=(S.role==='owner'?ROOT_O:ROOT_S).includes(p);
+  document.getElementById('tb-bk').style.display=(root||pStack.length===0)?'none':'flex';
+  document.getElementById('tb-t').textContent='🥐 '+(TITLES[p]||p);
+  buildNav();render();
+  document.getElementById('pw').scrollTop=0;
+}
+function goBack(){if(pStack.length>0){const p=pStack.pop();goTo(p,false);}}
+
+function buildNav(){
+  const role=S.role,p=curPage;
+  let h=`<div class="sb-top"><div class="sb-ic">🥐</div><div class="sb-nm">BakeryTrack</div><div class="sb-sub">Nepal Distribution</div><span class="sb-pill ${role==='owner'?'spo':'sps'}">${role==='owner'?'OWNER':'SALESMAN'}</span></div>`;
+  if(role==='owner'){
+    const q=qGet();
+    h+=`<div style="padding:7px 10px 0"><button style="width:100%;padding:7px 10px;background:${q.length>0?'var(--amb-l)':'var(--teal-l)'};color:${q.length>0?'var(--amb)':'var(--teal)'};border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="manualSync()">${q.length>0?'🔄 '+q.length+' pending sync':'✓ All synced'}</button></div>`;
+    ONAV.forEach(sec=>{h+=`<div class="sb-sec"><div class="sb-lbl">${sec.s}</div>`;sec.i.forEach(n=>{h+=`<button class="sbi${p===n.id?' ao':''}" onclick="goTo('${n.id}')"><span class="sbi-ic">${n.ic}</span>${n.l}</button>`;});h+=`</div>`;});
+  } else {
+    h+=`<div class="sb-sec"><div class="sb-lbl">Sales</div><button class="sbi${p==='s-sale'?' as':''}" onclick="goTo('s-sale')"><span class="sbi-ic">🛒</span>New Sale</button><button class="sbi${p==='s-stock'?' as':''}" onclick="goTo('s-stock')"><span class="sbi-ic">📦</span>My Stock</button></div>`;
+    h+=`<div class="sb-sec"><div class="sb-lbl">My Reports</div><button class="sbi${p==='s-performance'?' as':''}" onclick="goTo('s-performance')"><span class="sbi-ic">📊</span>My Performance</button><button class="sbi${p==='s-customers'?' as':''}" onclick="goTo('s-customers')"><span class="sbi-ic">🏪</span>My Customers</button><button class="sbi${p==='s-credits'?' as':''}" onclick="goTo('s-credits')"><span class="sbi-ic">💳</span>Shop Credits</button><button class="sbi${p==='s-history'?' as':''}" onclick="goTo('s-history')"><span class="sbi-ic">🗂</span>My Sales</button><button class="sbi${p==='s-close'?' as':''}" onclick="goTo('s-close')"><span class="sbi-ic">🏁</span>Close My Day</button></div>`;
+  }
+  h+=`<button class="sb-out" onclick="logout()">🚪 Sign Out</button>`;
+  document.getElementById('sidebar').innerHTML=h;
+  const bn=role==='owner'?OBN:SBN,ac=role==='owner'?'ao':'as';
+  document.getElementById('bnav').innerHTML=bn.map(b=>`<button class="bnb${p===b.id?' '+ac:''}" onclick="goTo('${b.id}')"><span class="bn-ic">${b.ic}</span><span>${b.l}</span></button>`).join('');
+}
+
+let _ar=null;
+function al(t,m){return`<div class="al al-${t}">${m}</div>`;}
+function offBar(){return isOnline?'':'<div class="off-bar">📵 Offline — data saved locally, will sync when connected</div>';}
+
+async function render(){
+  kc();
+  document.getElementById('pw').innerHTML=`<div style="padding:40px;text-align:center;color:var(--txs)"><div class="ld-sp" style="margin:0 auto;border-color:rgba(0,0,0,.12);border-top-color:var(--txs)"></div></div>`;
+  const fn=PG[curPage];if(!fn)return;
+  try{const html=await fn();document.getElementById('pw').innerHTML=html||'';if(typeof _ar==='function'){try{_ar();}catch(e){}}_ar=null;}
+  catch(e){console.error(e);document.getElementById('pw').innerHTML=al('e','Error: '+e.message);}
+}
+
+// ════════════════════════════════════════
+// PAGES
+// ════════════════════════════════════════
+const PG={};
+
+// ── OWNER: DASHBOARD ─────────────────────
+// Auto-refresh every 60 seconds
+let _dashRefresh=null;
+PG['o-dash']=async()=>{
+  if(_dashRefresh)clearInterval(_dashRefresh);
+  _dashRefresh=setInterval(()=>{if(curPage==='o-dash')render();},60000);
+
+  const tmrwDate=tmrw();
+  const [products,vans,orders,rawDets,production,loads,settlements,tmrwLoads]=await Promise.all([
+    getData('products','?active=eq.true'),
+    getData('vans','?active=eq.true&order=name'),
+    getData('orders',`?date=eq.${TODAY}`),
+    getData('order_details'),
+    getData('production',`?date=eq.${TODAY}`),
+    getData('van_loads',`?date=eq.${TODAY}`),
+    getData('settlements',`?date=eq.${TODAY}`),
+    getData('van_loads',`?date=eq.${tmrwDate}`)
+  ]);
+  const oids=orders.map(o=>o.id);
+  const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const prod=production.reduce((s,p)=>s+(+p.qty||0),0);
+  const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const vp=vans.map(v=>{
+    const vO=orders.filter(o=>o.van_id===v.id);
+    const settle=settlements.find(s=>s.van_id===v.id);
+    const todayL=loads.filter(l=>l.van_id===v.id).reduce((s,l)=>s+(+l.qty||0),0);
+    const tmrwL=tmrwLoads.filter(l=>l.van_id===v.id).reduce((s,l)=>s+(+l.qty||0),0);
+    return{...v,sales:vO.reduce((s,o)=>s+(+o.total||0),0),cnt:vO.length,todayLoaded:todayL,tmrwLoaded:tmrwL,settle};
+  });
+  // Tonight's loading status
+  const tmrwTotalLoaded=tmrwLoads.reduce((s,l)=>s+(+l.qty||0),0);
+  const tmrwLoadedVans=vans.filter(v=>tmrwLoads.some(l=>l.van_id===v.id));
+
+  return `
+  ${offBar()}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div style="font-size:11px;color:var(--txs);font-weight:600">📅 Today: ${bsL(TODAY)} (${TODAY})</div>
+    <button class="btn btn-sm" onclick="manualSync()" style="font-size:11px;padding:4px 10px">🔄 Refresh</button>
+  </div>
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Today's Revenue</div><div class="mv cteal">${RsC(rev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">Cash Expected</div><div class="mv cgrn">${RsC(rev-totalCredit)}</div><div class="ms">after credit</div></div>
+    <div class="mc"><div class="ml">Damage Deducted</div><div class="mv cred">${RsC(dam)}</div></div>
+    <div class="mc"><div class="ml">Vans Settled</div><div class="mv cteal">${settlements.filter(s=>s.status==='confirmed').length}/${vans.length}</div></div>
+  </div>
+
+  <div class="card">
+    <div class="chdr"><div class="ct">Van Summary — Today</div><div style="font-size:11px;color:var(--txs)">Auto-refreshes every 60s</div></div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Van</th><th>Driver</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Credit</th><th>Settlement</th></tr></thead>
+      <tbody>${vp.map(v=>{
+        const ss=v.settle?.status||'pending';
+        const badge=ss==='confirmed'?'<span class="badge bg">✓ Settled</span>':ss==='shortfall'?'<span class="badge br">⚠ Short</span>':ss==='salesman_submitted'?'<span class="badge ba">🏁 Declared</span>':'<span class="badge bm">Pending</span>';
+        const credit=orders.filter(o=>o.van_id===v.id).reduce((s,o)=>s+(+o.credit_amount||0),0);
+        return`<tr><td class="fm">${v.name}</td><td style="font-size:12px">${v.driver}</td><td class="tr">${v.cnt}</td><td class="tr fm">${RsC(v.sales)}</td><td class="tr camb">${credit>0?RsC(credit):'—'}</td><td>${badge}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="chdr">
+      <div class="ct">Tomorrow's Loading — ${bsL(tmrwDate)}</div>
+      <span class="badge ${tmrwTotalLoaded>0?'bt':'br'}">${tmrwTotalLoaded>0?tmrwLoadedVans.length+'/'+vans.length+' vans loaded':'Not loaded yet'}</span>
+    </div>
+    ${tmrwTotalLoaded>0?`
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Van</th><th>Driver</th><th class="tr">Total Packets</th><th>Status</th></tr></thead>
+      <tbody>${vp.map(v=>`<tr><td class="fm">${v.name}</td><td style="font-size:12px">${v.driver}</td><td class="tr fm">${v.tmrwLoaded||0}</td><td><span class="badge ${v.tmrwLoaded>0?'bt':'br'}">${v.tmrwLoaded>0?'✓ Loaded':'Not loaded'}</span></td></tr>`).join('')}</tbody>
+    </table></div>`
+    :`<div style="font-size:13px;color:var(--txs);padding:8px 0">No vans loaded for tomorrow yet. <button class="btn btn-teal btn-sm" style="margin-left:8px" onclick="goTo('o-load')">🚐 Load Now</button></div>`}
+  </div>
+
+  <div class="card"><div class="ct">Quick Actions</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-teal btn-sm" onclick="goTo('o-prod')">🏭 Production</button>
+      <button class="btn btn-teal btn-sm" onclick="goTo('o-load')">🚐 Load Vans</button>
+      <button class="btn btn-sm" onclick="goTo('o-settle')">💰 Settlement</button>
+      <button class="btn btn-sm" onclick="goTo('o-rpt')">📈 Report</button>
+      <button class="btn btn-sm" onclick="goTo('o-setup')">⚙️ Setup</button>
+    </div>
+  </div>`;
+};
+
+// ── OWNER: SETTLEMENT ────────────────────
+PG['o-settle']=async()=>{
+  const settleDate=W.sd||TODAY;W.sd=settleDate;
+  const [products,vans,orders,allDets,settlements,allReturns,allLoads]=await Promise.all([
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('vans','?active=eq.true&order=name'),
+    sbG('orders',`?date=eq.${settleDate}`),
+    sbG('order_details'),
+    sbG('settlements',`?date=eq.${settleDate}`),
+    sbG('van_returns',`?date=eq.${settleDate}`),
+    sbG('van_loads',`?date=eq.${settleDate}`)
+  ]);
+  const st=W.se||(W.se={cash:'',msg:''});
+  let h=st.msg?`<div class="al al-s">${st.msg}</div>`:'';
+  h+=`<div class="fg"><input type="date" class="fi" value="${settleDate}" onchange="W.sd=this.value;render()"/><div class="dh">BS: ${bsL(settleDate)} — Settlement for this date</div></div>`;
+
+  vans.forEach(van=>{
+    const vO=orders.filter(o=>o.van_id===van.id);
+    const oids=vO.map(o=>o.id);
+    const vD=allDets.filter(d=>oids.includes(d.order_id));
+    const vR=allReturns.filter(r=>r.van_id===van.id);
+    const vL=allLoads.filter(l=>l.van_id===van.id);
+    const totalSold=vO.reduce((s,o)=>s+(+o.total||0),0);
+    const totalDamAmt=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+    const totalCredit=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
+    const expectedCash=totalSold-totalCredit;
+    const settle=settlements.find(s=>s.van_id===van.id);
+    const status=settle?.status||'pending';
+
+    // Stock account per product
+    const stockRows=products.map(p=>{
+      const loaded=vL.filter(l=>l.product_id===p.id).reduce((s,l)=>s+(+l.qty||0),0);
+      if(!loaded)return null;
+      const sold=vD.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.qty_sold||0),0);
+      const damQty=vR.filter(r=>r.product_id===p.id).reduce((s,r)=>s+(+r.damage_qty||0),0);
+      const unsoldQty=vR.filter(r=>r.product_id===p.id).reduce((s,r)=>s+(+r.unsold_qty||0),0);
+      const accounted=sold+damQty+unsoldQty;
+      const diff=loaded-accounted;
+      return{name:p.name,loaded,sold,damQty,unsoldQty,accounted,diff};
+    }).filter(Boolean);
+
+    const totalLoaded=stockRows.reduce((s,r)=>s+r.loaded,0);
+    const totalSoldQ=stockRows.reduce((s,r)=>s+r.sold,0);
+    const totalDamQ=stockRows.reduce((s,r)=>s+r.damQty,0);
+    const totalUnsQ=stockRows.reduce((s,r)=>s+r.unsoldQty,0);
+    const totalAcc=stockRows.reduce((s,r)=>s+r.accounted,0);
+    const totalMissing=totalLoaded-totalAcc;
+
+    if(status==='confirmed'||status==='shortfall'){
+      const diff=+(settle.difference||0);
+      h+=`<div class="settle-card ${diff<0?'settle-short':'settle-done'}">
+        <div class="settle-title">${van.name} — ${van.driver} <span class="badge ${diff<0?'br':'bg'}" style="margin-left:8px">${diff<0?'⚠ Shortfall':'✓ Confirmed'}</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:10px 0 6px">Stock Account</div>
+        <div class="settle-row"><span>Loaded</span><span>${totalLoaded} pkts</span></div>
+        <div class="settle-row"><span>Sold to Shops</span><span class="cteal">${totalSoldQ} pkts</span></div>
+        <div class="settle-row" style="color:var(--red)"><span>🗑 Damage Returned</span><span>${totalDamQ} pkts</span></div>
+        <div class="settle-row" style="color:var(--amb)"><span>📦 Unsold Returned</span><span>${totalUnsQ} pkts</span></div>
+        <div class="settle-row"><span class="fm">Total Accounted</span><span class="fm ${totalMissing>0?'cred':''}">${totalAcc}/${totalLoaded} pkts${totalMissing>0?' (⚠ '+totalMissing+' missing)':' ✓'}</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:10px 0 6px">Cash Account</div>
+        <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+        <div class="settle-row"><span>Damage Deducted</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
+        <div class="settle-row"><span>Credit Given</span><span class="camb">− ${Rs(totalCredit)}</span></div>
+        <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+        <div class="settle-row"><span>Salesman Declared</span><span>${Rs(settle.salesman_declared_cash)}</span></div>
+        <div class="settle-row"><span>Actual Received</span><span>${Rs(settle.actual_cash_received)}</span></div>
+        <div class="settle-row"><span class="fm">${diff<0?'⚠ Shortfall':'✓ Matched'}</span><span class="fm" style="color:${diff<0?'var(--red)':'var(--grn)'}">${Rs(Math.abs(diff))} ${diff<0?'short':'surplus'}</span></div>
+      </div>`;
+    } else if(settle?.salesman_declared_cash!=null){
+      // Salesman submitted — waiting for owner
+      h+=`<div class="settle-card settle-pending">
+        <div class="settle-title">${van.name} — ${van.driver} <span class="badge ba" style="margin-left:8px">🏁 Salesman Submitted</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:10px 0 6px">Stock Account</div>
+        ${stockRows.length>0?`<div class="tblw"><table class="tbl" style="margin-bottom:10px">
+          <thead><tr><th>Product</th><th class="tr">Loaded</th><th class="tr">Sold</th><th class="tr cred">Damage</th><th class="tr camb">Unsold</th><th class="tr">Status</th></tr></thead>
+          <tbody>${stockRows.map(r=>`<tr>
+            <td style="font-size:12px">${r.name}</td>
+            <td class="tr">${r.loaded}</td>
+            <td class="tr cteal">${r.sold}</td>
+            <td class="tr cred">${r.damQty}</td>
+            <td class="tr camb">${r.unsoldQty}</td>
+            <td class="tr"><span class="badge ${r.diff===0?'bg':r.diff>0?'br':'ba'}">${r.diff===0?'✓ OK':r.diff>0?r.diff+' missing':Math.abs(r.diff)+' extra'}</span></td>
+          </tr>`).join('')}
+          <tr style="background:var(--sur2);font-weight:700">
+            <td>TOTAL</td><td class="tr">${totalLoaded}</td><td class="tr cteal">${totalSoldQ}</td>
+            <td class="tr cred">${totalDamQ}</td><td class="tr camb">${totalUnsQ}</td>
+            <td class="tr"><span class="badge ${totalMissing===0?'bg':'br'}">${totalMissing===0?'✓ All OK':'⚠ '+totalMissing+' missing'}</span></td>
+          </tr></tbody>
+        </table></div>`:'<div style="font-size:13px;color:var(--txs);margin-bottom:10px">No return data submitted</div>'}
+        <div style="font-size:11px;font-weight:700;color:var(--txs);text-transform:uppercase;margin:6px 0">Cash Account</div>
+        <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+        <div class="settle-row"><span>Damage Deducted</span><span class="cred">− ${Rs(totalDamAmt)}</span></div>
+        <div class="settle-row"><span>Credit Given</span><span class="camb">− ${Rs(totalCredit)}</span></div>
+        <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+        <div class="settle-row"><span>Salesman Declared</span><span class="fm">${Rs(settle.salesman_declared_cash)}</span></div>
+        <hr style="border:none;border-top:1px solid var(--bd);margin:10px 0">
+        <div class="fg"><label class="fl">Actual Cash Received (Rs.)</label>
+          <input type="number" inputmode="decimal" class="fi" id="cash-${van.id}" min="0" step="0.01" placeholder="${expectedCash.toFixed(2)}"/>
+        </div>
+        <button class="btn btn-grn btn-full" onclick="aConfirmSettle(${van.id},${settle.id},${expectedCash.toFixed(2)})">✓ Confirm Settlement</button>
+      </div>`;
+    } else {
+      h+=`<div class="settle-card settle-pending">
+        <div class="settle-title">${van.name} — ${van.driver} <span class="badge bm" style="margin-left:8px">Pending</span></div>
+        ${vO.length>0?`
+          <div class="settle-row"><span>Total Sales</span><span>${Rs(totalSold)}</span></div>
+          <div class="settle-row"><span>Damage Deducted</span><span class="cred">${Rs(totalDamAmt)}</span></div>
+          <div class="settle-row"><span>Credit Given</span><span class="camb">${Rs(totalCredit)}</span></div>
+          <div class="settle-row"><span>Expected Cash</span><span class="fm">${Rs(expectedCash)}</span></div>
+          <div style="font-size:12px;color:var(--txs);margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">
+            ⏳ Waiting for salesman to close their day and submit returns...
+          </div>`
+        :`<div style="font-size:13px;color:var(--txs)">No orders recorded for this date</div>`}
+      </div>`;
+    }
+  });
+  return h;
+};
+
+// ── OWNER: DAILY REPORT ───────────────────
+PG['o-rpt']=async()=>{
+  const date=W.rd||TODAY;W.rd=date;
+  // Fetch orders for this date first, then fetch their details specifically
+  const [products,vans,orders,production,loads]=await Promise.all([
+    getData('products'),
+    getData('vans'),
+    sbG('orders',`?date=eq.${date}&order=created_at.desc`),
+    getData('production',`?date=eq.${date}`),
+    getData('van_loads',`?date=eq.${date}`)
+  ]);
+  // Fetch details only for these orders
+  let dets=[];
+  if(orders.length>0){
+    const oids=orders.map(o=>o.id).join(',');
+    try{dets=await sbG('order_details',`?order_id=in.(${oids})`);}
+    catch(e){dets=[];}
+  }
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const dam=dets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+  const loaded=loads.reduce((s,l)=>s+(+l.qty||0),0);
+  const soldQ=dets.reduce((s,d)=>s+(+d.qty_sold||0),0);
+  const totalCredit=orders.reduce((s,o)=>s+(+o.credit_amount||0),0);
+  const totalCash=rev-totalCredit;
+  const tmrwDate=tmrw();
+  return `
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div style="flex:1;min-width:160px">
+      <input type="date" class="fi" value="${date}" onchange="W.rd=this.value;render()"/>
+      <div class="dh">BS: ${bsL(date)}</div>
+    </div>
+    <div style="display:flex;gap:7px;flex-shrink:0">
+      <button class="btn btn-sm" onclick="W.rd='${TODAY}';render()">Today</button>
+      <button class="btn btn-sm" onclick="W.rd='${tmrwDate}';render()">Tomorrow</button>
+      <button class="btn btn-sm" onclick="exportCSV('${date}')">⬇ CSV</button>
+      <button class="btn btn-sm" onclick="printRpt('${date}')">🖨 Print</button>
+    </div>
+  </div>
+  ${orders.length===0?`<div class="al al-w">
+    No orders found for ${bsL(date)} (${date}).
+    ${date===TODAY?'Salesmen record sales on their phones. The sale date may be set to tomorrow (van loading date).':''}
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="W.rd='${tmrwDate}';render()">Check Tomorrow</button>
+      ${date!==TODAY?`<button class="btn btn-sm" onclick="W.rd='${TODAY}';render()">Check Today</button>`:''}
+    </div>
+  </div>`:''}
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(rev)}</div><div class="ms">${orders.length} orders</div></div>
+    <div class="mc"><div class="ml">Cash Expected</div><div class="mv cgrn">${RsC(totalCash)}</div><div class="ms">after credit</div></div>
+    <div class="mc"><div class="ml">Damage Deducted</div><div class="mv cred">${RsC(dam)}</div></div>
+    <div class="mc"><div class="ml">On Credit</div><div class="mv camb">${RsC(totalCredit)}</div></div>
+  </div>
+  ${orders.length>0?`
+  <div class="card"><div class="ct">Sales by Van</div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Van</th><th>Driver</th><th class="tr">Orders</th><th class="tr">Revenue</th><th class="tr">Damage</th><th class="tr">Credit</th></tr></thead>
+      <tbody>${vans.map(v=>{
+        const vO=orders.filter(o=>o.van_id===v.id);
+        const vD=dets.filter(d=>vO.map(o=>o.id).includes(d.order_id));
+        const r=vO.reduce((s,o)=>s+(+o.total||0),0);
+        const dm=vD.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+        const cr=vO.reduce((s,o)=>s+(+o.credit_amount||0),0);
+        return vO.length>0?`<tr><td class="fm">${v.name}</td><td style="font-size:12px">${v.driver}</td><td class="tr">${vO.length}</td><td class="tr fm">${RsC(r)}</td><td class="tr cred">${RsC(dm)}</td><td class="tr camb">${RsC(cr)}</td></tr>`:'';
+      }).join('')}</tbody>
+    </table></div>
+  </div>
+  <div class="card"><div class="ct">Sales by Product</div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Product</th><th class="tr">Sold</th><th class="tr">Ret.Pkts</th><th class="tr">Ret.Pcs</th><th class="tr">Deduction</th><th class="tr">Revenue</th></tr></thead>
+      <tbody>${products.map(p=>{
+        const pd=dets.filter(d=>d.product_id==p.id);
+        const s=pd.reduce((x,d)=>x+(+d.qty_sold||0),0);
+        if(!s)return'';
+        const rp=pd.reduce((x,d)=>x+(+d.packets_returned||0),0);
+        const rc=pd.reduce((x,d)=>x+(+d.pieces_returned||0),0);
+        const dm=pd.reduce((x,d)=>x+(+d.damage_deduction||0),0);
+        const lt=pd.reduce((x,d)=>x+(+d.line_total||0),0);
+        return`<tr><td>${p.name}</td><td class="tr">${s}</td><td class="tr">${rp}</td><td class="tr">${rc}</td><td class="tr cred">${RsC(dm)}</td><td class="tr fm">${RsC(lt)}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>
+  <div class="card"><div class="ct">Order Details</div>
+    <div class="tblw"><table class="tbl">
+      <thead><tr><th>Shop</th><th>Van</th><th class="tr">Total</th><th class="tr">Damage</th><th class="tr">Credit</th><th>Pay</th></tr></thead>
+      <tbody>${orders.map(o=>{
+        const v=vans.find(x=>x.id==o.van_id);
+        const oDets=dets.filter(d=>d.order_id==o.id);
+        const oDam=oDets.reduce((s,d)=>s+(+d.damage_deduction||0),0);
+        return`<tr><td style="font-size:12px">Order #${o.id}</td><td style="font-size:11px">${v?v.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td class="tr cred">${oDam>0?RsC(oDam):'—'}</td><td class="tr camb">${+o.credit_amount>0?RsC(+o.credit_amount):'—'}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+  </div>`:''}`;
+};
+
+// ── OWNER: PROFIT ─────────────────────────
+PG['o-profit']=async()=>{
+  const date=W.pd||TODAY;W.pd=date;
+  const [products,vans,orders]=await Promise.all([getData('products'),getData('vans'),sbG('orders',`?date=eq.${date}`)]);
+  let dets=[];
+  if(orders.length>0){
+    const oids=orders.map(o=>o.id).join(',');
+    try{dets=await sbG('order_details',`?order_id=in.(${oids})`);}catch(e){dets=[];}
+  }
+  const rev=orders.reduce((s,o)=>s+(+o.total||0),0);
+  const cost=dets.reduce((s,d)=>{const p=products.find(x=>x.id==d.product_id);return s+(p?.cost?d.qty_sold*p.cost:0);},0);
+  const gross=rev-cost;const margin=rev>0?(gross/rev*100).toFixed(1):0;
+  const pp=products.map(p=>{const pd=dets.filter(d=>d.product_id===p.id);const r=pd.reduce((s,d)=>s+(+d.line_total||0),0);const c=pd.reduce((s,d)=>s+d.qty_sold*(p.cost||0),0);const s=pd.reduce((s,d)=>s+(+d.qty_sold||0),0);return{...p,r,c,profit:r-c,sold:s};}).filter(p=>p.sold>0).sort((a,b)=>b.profit-a.profit);
+  const allZeroCost=products.every(p=>!p.cost||p.cost==0);
+  return `
+  <div class="fg"><input type="date" class="fi" value="${date}" onchange="W.pd=this.value;render()"/><div class="dh">BS: ${bsL(date)}</div></div>
+  ${allZeroCost?`<div class="al al-w">⚠ Cost prices are not set. Profit calculation shows Rs. 0. Go to <b>Setup → Products</b> and add the cost price for each product to see real profit figures.</div>`:''}
+  <div class="mg mg4">
+    <div class="mc"><div class="ml">Revenue</div><div class="mv cteal">${RsC(rev)}</div></div>
+    <div class="mc"><div class="ml">Cost</div><div class="mv cred">${RsC(cost)}</div></div>
+    <div class="mc"><div class="ml">Gross Profit</div><div class="mv" style="color:${gross>=0?'var(--grn)':'var(--red)'}">${RsC(gross)}</div></div>
+    <div class="mc"><div class="ml">Margin</div><div class="mv" style="color:${parseFloat(margin)>=20?'var(--grn)':parseFloat(margin)>=10?'var(--amb)':'var(--red)'}">${margin}%</div></div>
+  </div>
+  <div class="card"><div class="ct">Profit by Product</div>
+    ${pp.length?`<div class="tblw"><table class="tbl"><thead><tr><th>Product</th><th class="tr">Sold</th><th class="tr">Revenue</th><th class="tr">Profit</th></tr></thead>
+    <tbody>${pp.map(p=>`<tr><td>${p.name}</td><td class="tr">${p.sold}</td><td class="tr">${RsC(p.r)}</td><td class="tr fm" style="color:${p.profit>=0?'var(--grn)':'var(--red)'}">${RsC(p.profit)}</td></tr>`).join('')}</tbody>
+    </table></div>`:'<div class="empty" style="padding:12px"><div class="et">No sales on this date</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: PRODUCTION ─────────────────────
+PG['o-prod']=async()=>{
+  const products=await getData('products','?active=eq.true&order=sort_order,name');
+  const st=W.pr||(W.pr={date:TODAY,pid:'',qty:'',msg:''});
+  // Show production for the selected date, not always today
+  const prods=await getData('production',`?date=eq.${st.date}&order=created_at.desc`);
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">Log Production</div>
+    <div class="fg"><label class="fl">Production Date</label><input type="date" class="fi" value="${st.date}" onchange="W.pr.date=this.value;render()"/><div class="dh">BS: ${bsL(st.date)}</div></div>
+    <div class="fg"><label class="fl">Product</label><select class="fi" onchange="W.pr.pid=this.value"><option value="">— Select —</option>${products.map(p=>`<option value="${p.id}" ${st.pid==p.id?'selected':''}>${p.name}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Quantity (packets)</label><input type="number" inputmode="numeric" class="fi" min="1" value="${st.qty}" placeholder="e.g. 200" oninput="W.pr.qty=this.value"/></div>
+    <button class="btn btn-teal btn-full" onclick="aProd()">Log Production</button>
+  </div>
+  <div class="card"><div class="chdr"><div class="ct">Production — ${bsL(st.date)}</div><div style="font-size:11px;color:var(--txs)">${prods.reduce((s,p)=>s+(+p.qty||0),0)} total packets</div></div>
+    ${prods.length?`<div class="tblw"><table class="tbl"><thead><tr><th>Product</th><th class="tr">Qty</th><th></th></tr></thead><tbody>
+    ${prods.map(p=>{const pr=products.find(x=>x.id==p.product_id);return`<tr><td>${pr?pr.name:'?'}</td><td class="tr fm">${p.qty}</td><td class="tr"><button class="btn-ico" onclick="delIt('production','?id=eq.${p.id}')">🗑</button></td></tr>`;}).join('')}
+    <tr style="background:var(--sur2)"><td class="fm">Total</td><td class="tr fm">${prods.reduce((s,p)=>s+(+p.qty||0),0)}</td><td></td></tr>
+    </tbody></table></div>`:'<div class="empty" style="padding:16px"><div class="ei">🏭</div><div class="et">Nothing logged for this date</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: VAN LOADING ────────────────────
+PG['o-load']=async()=>{
+  const [vans,products,loads,production,bills]=await Promise.all([
+    getData('vans','?active=eq.true&order=name'),
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('van_loads'),
+    getData('production'),
+    isOnline?sbG('loading_bills',`?date=eq.${W.vl?.date||tmrw()}&order=created_at.desc`).catch(()=>[]):Promise.resolve([])
+  ]);
+  const st=W.vl||(W.vl={date:tmrw(),vanId:'',pid:'',qty:'',crates:'',msg:''});
+  const tp={};production.filter(p=>p.date<=st.date).forEach(p=>{tp[p.product_id]=(tp[p.product_id]||0)+(+p.qty||0);});
+  const tl=loads.filter(l=>l.date===st.date);
+  const alreadyLoaded={};tl.forEach(l=>{alreadyLoaded[l.product_id]=(alreadyLoaded[l.product_id]||0)+(+l.qty||0);});
+
+  // Group loads by van
+  const vanLoads=vans.map(v=>{
+    const vLoads=tl.filter(l=>l.van_id===v.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const totalPkts=vLoads.reduce((s,l)=>s+(+l.qty||0),0);
+    const totalCrates=vLoads.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0);
+    const bill=bills.find(b=>b.van_id===v.id);
+    return{...v,loads:vLoads,totalPkts,totalCrates,bill};
+  }).filter(v=>v.loads.length>0||st.vanId==v.id);
+
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="al al-i">📅 Evening loading for tomorrow's delivery. Date is pre-set to tomorrow.</div>
+
+  <div class="card"><div class="ct">Add Product to Van</div>
+    <div class="fg"><label class="fl">Delivery Date</label>
+      <input type="date" class="fi" value="${st.date}" onchange="W.vl.date=this.value;render()"/>
+      <div class="dh">BS: ${bsL(st.date)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fg" style="margin:0"><label class="fl">Van</label>
+        <select class="fi" onchange="W.vl.vanId=this.value">
+          <option value="">— Select van —</option>
+          ${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fg" style="margin:0"><label class="fl">Product</label>
+        <select class="fi" onchange="W.vl.pid=this.value">
+          <option value="">— Select —</option>
+          ${products.map(p=>{const avail=(tp[p.id]||0)-(alreadyLoaded[p.id]||0);return`<option value="${p.id}" ${st.pid==p.id?'selected':''}>${p.name} (${avail} avail)</option>`;}).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fg" style="margin:0"><label class="fl">Quantity (packets) *</label>
+        <input type="number" inputmode="numeric" class="fi" min="1" value="${st.qty}" placeholder="e.g. 200" oninput="W.vl.qty=this.value"/>
+      </div>
+      <div class="fg" style="margin:0"><label class="fl">Crates (optional)</label>
+        <input type="number" inputmode="numeric" class="fi" min="0" value="${st.crates}" placeholder="e.g. 5" oninput="W.vl.crates=this.value"/>
+      </div>
+    </div>
+    <button class="btn btn-teal btn-full" onclick="aLoad()">＋ Add to Van</button>
+  </div>
+
+  ${tl.length===0?`<div class="empty"><div class="ei">🚐</div><div class="et">No loads for ${bsL(st.date)}</div><div class="es">Select a van and product above to start loading</div></div>`:''}
+
+  ${vans.filter(v=>tl.some(l=>l.van_id===v.id)).map(van=>{
+    const vL=tl.filter(l=>l.van_id===van.id);
+    const totalPkts=vL.reduce((s,l)=>s+(+l.qty||0),0);
+    const totalCrates=vL.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0);
+    const bill=bills.find(b=>b.van_id===van.id);
+    const billNo=bill?.bill_no||'(not issued)';
+    let sn=1;
+    return`<div class="card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:800">${van.name}</div>
+          <div style="font-size:12px;color:var(--txs)">${van.driver}</div>
+          ${bill?`<div style="font-size:11px;font-weight:700;color:var(--teal);margin-top:3px">📋 Bill No: ${billNo}</div>`:''}
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          ${!bill?`<button class="btn btn-teal btn-sm" onclick="aIssueBill(${van.id},'${st.date}',${totalPkts},${totalCrates})">📋 Issue Bill</button>`:''}
+          <button class="btn btn-sm" onclick="printLoadBill(${van.id},'${st.date}')">🖨 Print</button>
+        </div>
+      </div>
+      <div class="tblw"><table class="tbl">
+        <thead><tr><th style="width:28px">S.N.</th><th>Product</th><th class="tr">Packets</th><th class="tr">Crates</th><th></th></tr></thead>
+        <tbody>${vL.map(l=>{const p=products.find(x=>x.id==l.product_id);return`<tr>
+          <td style="font-size:11px;color:var(--txs);font-weight:700">${sn++}</td>
+          <td style="font-size:13px;font-weight:600">${p?p.name:'?'}</td>
+          <td class="tr fm">${l.qty}</td>
+          <td class="tr">${l.crates?`<span class="badge bt">${l.crates}</span>`:'<span style="color:var(--txt);font-size:11px">—</span>'}</td>
+          <td class="tr"><button class="btn-ico" onclick="delIt('van_loads','?id=eq.${l.id}')">🗑</button></td>
+        </tr>`;}).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--teal-l);font-weight:700">
+            <td colspan="2" style="font-size:13px;font-weight:800;color:var(--teal)">TOTAL — ${van.name}</td>
+            <td class="tr" style="font-size:15px;font-weight:800;color:var(--teal)">${totalPkts}</td>
+            <td class="tr" style="color:var(--teal)">${totalCrates>0?totalCrates+' crates':'—'}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table></div>
+    </div>`;
+  }).join('')}
+
+  ${tl.length>0?`<div class="card" style="background:var(--teal-l);border:1.5px solid var(--teal-b)">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--teal)">Grand Total — All Vans</div>
+        <div style="font-size:11px;color:var(--teal);margin-top:2px">${bsL(st.date)} · ${vans.filter(v=>tl.some(l=>l.van_id===v.id)).length} vans loaded</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:22px;font-weight:800;color:var(--teal)">${tl.reduce((s,l)=>s+(+l.qty||0),0)} packets</div>
+        ${tl.some(l=>l.crates)?`<div style="font-size:13px;font-weight:700;color:var(--teal)">${tl.filter(l=>l.crates).reduce((s,l)=>s+(+l.crates||0),0)} crates total</div>`:''}
+      </div>
+    </div>
+  </div>`:''}`;
+};
+
+// ── OWNER: VAN STOCK ──────────────────────
+PG['o-stock']=async()=>{
+  // Default to tomorrow if that has loads, otherwise today
+  const stockDate=W.stockDate||(()=>{const t=tmrw();return t;})();
+  W.stockDate=stockDate;
+  const [vans,products,loads,orders,rawDets,carries]=await Promise.all([
+    getData('vans','?active=eq.true&order=name'),
+    getData('products','?active=eq.true&order=sort_order,name'),
+    getData('van_loads',`?date=eq.${stockDate}`),
+    getData('orders',`?date=eq.${stockDate}`),
+    getData('order_details'),
+    getData('carryover',`?to_date=eq.${stockDate}`)
+  ]);
+  const oids=orders.map(o=>o.id);const dets=rawDets.filter(d=>oids.includes(d.order_id));
+  const fv=W.fv||'';
+  // If no loads found for selected date, show a warning
+  const hasAnyLoads=loads.length>0;
+  let h=`
+  <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:11px;flex-wrap:wrap">
+    <div style="flex:1;min-width:160px">
+      <label class="fl">Stock Date</label>
+      <input type="date" class="fi" value="${stockDate}" onchange="W.stockDate=this.value;W.fv='';render()"/>
+      <div class="dh">BS: ${bsL(stockDate)}</div>
+    </div>
+    <div>
+      <button class="btn btn-sm ${stockDate===TODAY?'btn-teal':''}" onclick="W.stockDate='${TODAY}';render()">Today</button>
+      <button class="btn btn-sm ${stockDate===tmrw()?'btn-teal':''}" style="margin-left:6px" onclick="W.stockDate=tmrw();render()">Tomorrow</button>
+    </div>
+  </div>
+  ${!hasAnyLoads?`<div class="al al-w">⚠ No van loads found for ${bsL(stockDate)} (${stockDate}). Go to <b>Van Loading</b> to load the vans first.</div>`:''}
+  <div class="fg"><select class="fi" onchange="W.fv=parseInt(this.value)||'';render()"><option value="">All Vans</option>${vans.map(v=>`<option value="${v.id}" ${fv==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>`;
+  (fv?vans.filter(v=>v.id==fv):vans).forEach(van=>{
+    let rows='',ok=false;
+    products.forEach(p=>{
+      const l=loads.filter(x=>x.van_id===van.id&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
+      const c=carries.filter(x=>x.van_id===van.id&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty||0),0);
+      if(!l&&!c)return;ok=true;
+      const vanOrderIds=orders.filter(o=>o.van_id===van.id).map(o=>o.id);
+      const sold=dets.filter(x=>vanOrderIds.includes(x.order_id)&&x.product_id===p.id).reduce((s,x)=>s+(+x.qty_sold||0),0);
+      const tot=l+c,rem=tot-sold,pct=tot>0?rem/tot*100:0;
+      rows+=`<div class="srow"><div class="sr-l"><div class="sr-nm">${p.name}</div><div class="pbw" style="max-width:120px"><div class="pb ${pct<20?'crit':pct<40?'low':''}" style="width:${Math.max(0,pct).toFixed(0)}%"></div></div></div>
+        <div class="sr-r">
+          <div class="sr-n"><div class="sr-n-l">Loaded</div><div class="sr-n-v">${tot}</div></div>
+          <div class="sr-n"><div class="sr-n-l">Sold</div><div class="sr-n-v cteal">${sold}</div></div>
+          <div class="sr-n"><div class="sr-n-l">Left</div><div class="sr-n-v" style="color:${pct<20?'var(--red)':pct<40?'var(--amb)':'var(--tx)'}">${rem}</div></div>
+        </div>
+      </div>`;
+    });
+    h+=`<div class="card">
+      <div class="chdr">
+        <div><div style="font-size:15px;font-weight:700">${van.name}</div><div style="font-size:12px;color:var(--txs)">${van.driver}</div></div>
+        <span class="badge ${ok?'bt':'bm'}">${ok?'Loaded':'Not loaded'}</span>
+      </div>
+      ${ok?rows:`<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">No load for this date</div></div>`}
+    </div>`;
+  });
+  return h;
+};
+
+// ── OWNER: CARRYOVER ─────────────────────
+PG['o-carry']=async()=>{
+  const vans=await getData('vans','?active=eq.true&order=name');
+  const products=await getData('products','?active=eq.true&order=sort_order,name');
+  const st=W.co||(W.co={date:TODAY,vanId:'',msg:''});
+  const prev=new Date(st.date);prev.setDate(prev.getDate()-1);const ps=prev.toISOString().split('T')[0];
+  let vr=[];
+  if(st.vanId){
+    const [loads,orders,rawDets,carries]=await Promise.all([getData('van_loads',`?date=eq.${ps}&van_id=eq.${st.vanId}`),getData('orders',`?date=eq.${ps}&van_id=eq.${st.vanId}`),getData('order_details'),getData('carryover',`?to_date=eq.${st.date}&van_id=eq.${st.vanId}`)]);
+    const oids=orders.map(o=>o.id);const od=rawDets.filter(d=>oids.includes(d.order_id));
+    vr=products.map(p=>{const l=loads.filter(l=>l.product_id===p.id).reduce((s,l)=>s+(+l.qty||0),0);const s=od.filter(d=>d.product_id===p.id).reduce((s,d)=>s+(+d.qty_sold||0),0);const rem=l-s;const ex=carries.find(c=>c.product_id===p.id);const c=ex?(+ex.qty||0):0;if(rem<=0&&c===0)return null;return{p,rem,c,exId:ex?.id};}).filter(Boolean);
+  }
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">Stock Carryover</div>
+    <p style="font-size:13px;color:var(--txs);margin-bottom:12px">Transfer unsold stock from previous day into today's van load.</p>
+    <div class="fg"><label class="fl">Transfer to Date</label><input type="date" class="fi" value="${st.date}" onchange="W.co.date=this.value;render()"/><div class="dh">BS: ${bsL(st.date)}</div></div>
+    <div class="fg"><label class="fl">Van</label><select class="fi" onchange="W.co.vanId=this.value;render()"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    ${st.vanId&&vr.length?`<p style="font-size:12px;font-weight:600;color:var(--txs);margin-bottom:8px">Remaining from ${bsL(ps)}:</p>
+    <div class="tblw"><table class="tbl" style="margin-bottom:12px"><thead><tr><th>Product</th><th class="tr">Remaining</th><th class="tr">Carry Qty</th></tr></thead>
+    <tbody>${vr.map((r,i)=>`<tr><td>${r.p.name}</td><td class="tr">${r.rem}</td><td class="tr"><input type="number" inputmode="numeric" min="0" max="${r.rem}" value="${r.c}" style="width:62px;padding:5px 7px;border:1.5px solid var(--bd2);border-radius:6px;font-size:14px;text-align:right;font-family:inherit" id="co-${i}"/></td></tr>`).join('')}
+    </tbody></table></div>
+    <button class="btn btn-teal btn-full" onclick="aCarry(${JSON.stringify(vr.map((r,i)=>({pid:r.p.id,exId:r.exId||null,idx:i})))})">Save Carryover</button>`
+    :(st.vanId?'<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">No remaining stock</div></div>':'<div class="empty" style="padding:12px"><div class="et" style="font-size:13px">Select a van</div></div>')}
+  </div>`;
+};
+
+// ── OWNER: SHOP CREDITS ───────────────────
+PG['o-credits']=async()=>{
+  const [shops,vans,credits,payments]=await Promise.all([getData('shops','?active=eq.true&order=name'),getData('vans'),getData('shop_credits'),getData('payments','?order=created_at.desc&limit=50')]);
+  const st=W.cr||(W.cr={sid:'',amt:'',note:'',msg:''});
+  const wb=shops.map(s=>{const cr=credits.find(c=>c.shop_id===s.id);return{...s,bal:cr?(+cr.balance||0):0};}).sort((a,b)=>b.bal-a.bal);
+  const owed=wb.filter(s=>s.bal>0).reduce((t,s)=>t+s.bal,0);
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="mg"><div class="mc"><div class="ml">Total Outstanding</div><div class="mv cred">${RsC(owed)}</div><div class="ms">${wb.filter(s=>s.bal>0).length} shops owe</div></div><div class="mc"><div class="ml">Credits Issued</div><div class="mv cgrn">${RsC(Math.abs(wb.filter(s=>s.bal<0).reduce((t,s)=>t+s.bal,0)))}</div></div></div>
+  <div class="card"><div class="ct">Record Payment</div>
+    <div class="fg"><label class="fl">Shop</label><select class="fi" onchange="W.cr.sid=parseInt(this.value)||'';render()"><option value="">— Select shop —</option>${shops.map(s=>{const b=wb.find(x=>x.id===s.id)?.bal||0;return`<option value="${s.id}" ${st.sid==s.id?'selected':''}>${s.name} (${b>0?'owes '+RsC(b):b<0?'credit':' clear'})</option>`;}).join('')}</select></div>
+    <div class="fg"><label class="fl">Amount (Rs.)</label><input type="number" inputmode="decimal" class="fi" min="0" step="0.01" value="${st.amt}" placeholder="0.00" oninput="W.cr.amt=this.value"/></div>
+    <div class="fg"><label class="fl">Note</label><input type="text" class="fi" value="${st.note}" placeholder="e.g. Cash received" oninput="W.cr.note=this.value"/></div>
+    <button class="btn btn-grn btn-full" onclick="aPayment()">Record Payment</button>
+  </div>
+  <div class="card"><div class="ct">All Shop Balances</div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>Shop</th><th>Van</th><th class="tr">Balance</th><th class="tr">Status</th></tr></thead>
+    <tbody>${wb.map(s=>{const v=vans.find(x=>x.id===s.van_id);return`<tr><td>${s.name}</td><td style="font-size:11px">${v?v.name:'—'}</td><td class="tr fm" style="color:${s.bal>0?'var(--red)':s.bal<0?'var(--grn)':'var(--txs)'}">${s.bal>0?RsC(s.bal):s.bal<0?'−'+RsC(-s.bal):'—'}</td><td class="tr"><span class="badge ${s.bal>0?'br':s.bal<0?'bg':'bm'}">${s.bal>0?'Owes':s.bal<0?'Credit':'Clear'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>
+  ${payments.length?`<div class="card"><div class="ct">Payment History</div><div class="tblw"><table class="tbl"><thead><tr><th>BS Date</th><th>Shop</th><th class="tr">Amount</th><th>Note</th></tr></thead>
+  <tbody>${payments.slice(0,30).map(p=>{const s=shops.find(x=>x.id==p.shop_id);return`<tr><td style="font-size:11px">${bsS(p.date)}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr cgrn fm">${RsC(p.amount)}</td><td style="font-size:12px;color:var(--txs)">${p.note||'—'}</td></tr>`;}).join('')}</tbody>
+  </table></div></div>`:''}`;
+};
+
+// ── OWNER: SALES HISTORY ─────────────────
+PG['o-history']=async()=>{
+  const filterDate=W.hd||'';W.hd=filterDate;
+  const query=filterDate?`?date=eq.${filterDate}&order=created_at.desc`:'?order=created_at.desc&limit=300';
+  const [orders,vans,shops]=await Promise.all([sbG('orders',query),getData('vans'),getData('shops')]);
+  const tmrwDate=tmrw();
+  return `<div class="card">
+    <div class="chdr"><div class="ct">Sales History</div><span class="badge bt">${orders.length}</span></div>
+    <div style="display:flex;gap:8px;margin-bottom:11px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px"><input type="date" class="fi" value="${filterDate}" placeholder="Filter by date" onchange="W.hd=this.value;render()"/></div>
+      <button class="btn btn-sm" onclick="W.hd='${TODAY}';render()">Today</button>
+      <button class="btn btn-sm" onclick="W.hd='${tmrwDate}';render()">Tomorrow</button>
+      <button class="btn btn-sm btn-ghost" onclick="W.hd='';render()">All</button>
+    </div>
+    ${orders.length?`<div class="tblw"><table class="tbl">
+      <thead><tr><th>BS Date</th><th>AD Date</th><th>Van</th><th>Shop</th><th class="tr">Total</th><th>Pay</th></tr></thead>
+      <tbody>${orders.map(o=>{const v=vans.find(x=>x.id==o.van_id),s=shops.find(x=>x.id==o.shop_id);return`<tr><td style="font-size:11px">${bsS(o.date)}</td><td style="font-size:11px">${o.date}</td><td style="font-size:12px">${v?v.name:'?'}</td><td style="font-size:12px">${s?s.name:'?'}</td><td class="tr fm">${RsC(+o.total)}</td><td><span class="badge ${o.payment_method==='cash'?'bg':o.payment_method==='credit'?'br':'ba'}">${o.payment_method==='cash'?'Cash':o.payment_method==='credit'?'Credit':'Part'}</span></td></tr>`;}).join('')}</tbody>
+    </table></div>`:'<div class="empty"><div class="ei">🗂</div><div class="et">No orders found</div><div class="es">Try a different date or tap All</div></div>'}
+  </div>`;
+};
+
+// ── OWNER: SETUP ──────────────────────────
+PG['o-setup']=()=>Promise.resolve(`
+  <div class="card"><div class="ct">Setup</div>
+    <div class="mgrid">
+      <button class="mc-btn" onclick="goTo('o-setup-prod')"><span class="mc-ic">🍞</span><span class="mc-t">Products</span><span class="mc-s">Names, rates, piece pricing</span></button>
+      <button class="mc-btn" onclick="goTo('o-setup-vans')"><span class="mc-ic">🚌</span><span class="mc-t">Vans & PINs</span><span class="mc-s">Van names, drivers, PINs</span></button>
+      <button class="mc-btn" onclick="goTo('o-setup-shops')"><span class="mc-ic">🏪</span><span class="mc-t">Shops</span><span class="mc-s">Customer shops, assign vans</span></button>
+      <button class="mc-btn" onclick="goTo('o-setup-areas')"><span class="mc-ic">📍</span><span class="mc-t">Areas / Zones</span><span class="mc-s">Group shops by area</span></button>
+    </div>
+  </div>`);
+
+// ── OWNER: SETUP PRODUCTS ─────────────────
+PG['o-setup-prod']=async()=>{
+  const [products,pps]=await Promise.all([getData('products','?order=sort_order,name'),getData('piece_prices','?order=product_id,pieces')]);
+  const st=W.prd||(W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Product':'Add New Product'}</div>
+    <div class="fg"><label class="fl">Product Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Bread" oninput="W.prd.name=this.value"/></div>
+    <div class="fg"><label class="fl">Selling Rate (Rs.) — per packet</label><input type="number" inputmode="decimal" class="fi" step="0.01" value="${st.rate}" placeholder="0.00" oninput="W.prd.rate=this.value"/></div>
+    <div class="fg"><label class="fl" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="hp" ${st.hasPiece?'checked':''} onchange="W.prd.hasPiece=this.checked;if(!this.checked)W.prd.ppRows=[];render()"/> Has piece pricing (partial returns)</label></div>
+    ${st.hasPiece?`
+    <div class="fg"><label class="fl">Pieces per packet</label><input type="number" inputmode="numeric" class="fi" min="1" max="20" value="${st.piecesPerPkt}" oninput="W.prd.piecesPerPkt=parseInt(this.value)||1;buildPpRows();render()"/></div>
+    <div style="font-size:12px;font-weight:600;color:var(--txs);margin-bottom:8px">Piece price table — enter deduction for each piece count:</div>
+    ${Array.from({length:st.piecesPerPkt},(_, i)=>i+1).map(n=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <label style="font-size:13px;min-width:80px">${n} piece${n>1?'s':''}</label>
+        <input type="number" inputmode="decimal" class="fi" style="max-width:120px" step="0.01" placeholder="Rs. 0.00" value="${st.ppRows[n-1]||''}" oninput="W.prd.ppRows[${n-1}]=parseFloat(this.value)||0"/>
+        ${n===st.piecesPerPkt?`<span style="font-size:11px;color:var(--txs)">(= full packet)</span>`:''}
+      </div>`).join('')}
+    `:''}
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-teal" style="flex:1" onclick="aSavePrd()">${st.edit?'Update':'Add Product'}</button>
+      ${st.edit?`<button class="btn btn-ghost" onclick="W.prd={name:'',rate:'',hasPiece:false,piecesPerPkt:1,ppRows:[],edit:null,msg:''};render()">Cancel</button>`:''}
+    </div>
+  </div>
+  <div class="card"><div class="ct">All Products (${products.length})</div>
+    ${products.map(p=>{
+      const pp=pps.filter(x=>x.product_id===p.id).sort((a,b)=>a.pieces-b.pieces);
+      return`<div class="si-item">
+        <div>
+          <div style="font-size:13px;font-weight:700">${p.name}</div>
+          <div style="font-size:11px;color:var(--txs);margin-top:2px">Packet: ${Rs(p.rate)} ${p.has_piece_pricing?'· '+p.pieces_per_packet+' pcs/pkt':'· Packet only'}</div>
+          ${p.has_piece_pricing&&pp.length?`<div style="font-size:10px;color:var(--amb);margin-top:2px">${pp.map(x=>`${x.pieces}pc=Rs.${x.price}`).join(' · ')}</div>`:''}
+        </div>
+        <div class="si-btns"><button class="btn-ico" onclick="aEditPrd(${p.id})">✏️</button><button class="btn-ico" onclick="delIt('products','?id=eq.${p.id}')">🗑</button></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+};
+
+// ── OWNER: SETUP VANS ─────────────────────
+PG['o-setup-vans']=async()=>{
+  const vans=await getData('vans','?order=name');
+  const st=W.van||(W.van={name:'',driver:'',pin:'',edit:null,msg:''});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Van':'Add New Van'}</div>
+    <div class="fg"><label class="fl">Van Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Van Alpha" oninput="W.van.name=this.value"/></div>
+    <div class="fg"><label class="fl">Driver Name</label><input type="text" class="fi" value="${st.driver}" placeholder="Driver's full name" oninput="W.van.driver=this.value"/></div>
+    <div class="fg"><label class="fl">Salesman PIN (4–6 digits)</label><input type="text" inputmode="numeric" class="fi" maxlength="6" value="${st.pin}" placeholder="e.g. 1234" oninput="W.van.pin=this.value"/><div class="dh">Salesman enters this PIN to log in</div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveVan()">${st.edit?'Update':'Add Van'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.van={name:'',driver:'',pin:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
+  </div>
+  <div class="card"><div class="ct">All Vans</div>
+    ${vans.map(v=>`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${v.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">Driver: ${v.driver} · PIN: ${v.pin||'—'}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditVan(${v.id})">✏️</button><button class="btn-ico" onclick="aDelVan(${v.id})">🗑</button></div></div>`).join('')}
+  </div>`;
+};
+
+// ── OWNER: SETUP AREAS ────────────────────
+PG['o-setup-areas']=async()=>{
+  const [areas,vans]=await Promise.all([getData('areas','?order=van_id,sort_order'),getData('vans','?active=eq.true&order=name')]);
+  const st=W.ar||(W.ar={name:'',vanId:'',edit:null,msg:''});
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Area':'Add New Area'}</div>
+    <div class="fg"><label class="fl">Area Name</label><input type="text" class="fi" value="${st.name}" placeholder="e.g. Kathmandu Central" oninput="W.ar.name=this.value"/></div>
+    <div class="fg"><label class="fl">Van (which van serves this area)</label><select class="fi" onchange="W.ar.vanId=this.value"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveArea()">${st.edit?'Update':'Add Area'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.ar={name:'',vanId:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
+  </div>
+  <div class="card"><div class="ct">All Areas</div>
+    ${areas.map(a=>{const v=vans.find(x=>x.id==a.van_id);return`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${a.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${v?v.name:'No van'}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditArea(${a.id})">✏️</button><button class="btn-ico" onclick="delIt('areas','?id=eq.${a.id}')">🗑</button></div></div>`;}).join('')}
+  </div>`;
+};
+
+// ── OWNER: SETUP SHOPS ────────────────────
+PG['o-setup-shops']=async()=>{
+  const [shops,vans,areas,credits]=await Promise.all([getData('shops','?order=name'),getData('vans','?active=eq.true&order=name'),getData('areas','?order=van_id,name'),getData('shop_credits')]);
+  const st=W.shp||(W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:''});
+  const filtAreas=st.vanId?areas.filter(a=>a.van_id==st.vanId):areas;
+  return `
+  ${st.msg?al('s',st.msg):''}
+  <div class="card"><div class="ct">${st.edit?'Edit Shop':'Add New Shop'}</div>
+    <div class="fg"><label class="fl">Shop Name *</label><input type="text" class="fi" value="${st.name}" placeholder="Shop name" oninput="W.shp.name=this.value"/></div>
+    <div class="fg"><label class="fl">Address</label><input type="text" class="fi" value="${st.address}" placeholder="Street / area" oninput="W.shp.address=this.value"/></div>
+    <div class="fg"><label class="fl">Phone</label><input type="text" class="fi" value="${st.phone}" placeholder="984X-XXXX" oninput="W.shp.phone=this.value"/></div>
+    <div class="fg"><label class="fl">Contact Name</label><input type="text" class="fi" value="${st.contact}" placeholder="Shop owner name" oninput="W.shp.contact=this.value"/></div>
+    <div class="fg"><label class="fl">Assigned Van *</label><select class="fi" onchange="W.shp.vanId=this.value;W.shp.areaId='';render()"><option value="">— Select van —</option>${vans.map(v=>`<option value="${v.id}" ${st.vanId==v.id?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div class="fg"><label class="fl">Area / Zone</label><select class="fi" onchange="W.shp.areaId=this.value"><option value="">— Select area —</option>${filtAreas.map(a=>`<option value="${a.id}" ${st.areaId==a.id?'selected':''}>${a.name}</option>`).join('')}</select></div>
+    ${!st.edit?`<div class="fg"><label class="fl">Opening Balance (Rs.) — if they already owe</label><input type="number" inputmode="decimal" class="fi" step="0.01" value="${st.openBal}" placeholder="0.00" oninput="W.shp.openBal=this.value"/></div>`:''}
+    <div style="display:flex;gap:8px"><button class="btn btn-teal" style="flex:1" onclick="aSaveShop()">${st.edit?'Update':'Add Shop'}</button>${st.edit?`<button class="btn btn-ghost" onclick="W.shp={name:'',address:'',phone:'',contact:'',vanId:'',areaId:'',openBal:'',edit:null,msg:''};render()">Cancel</button>`:''}</div>
+  </div>
+  <div class="card"><div class="chdr"><div class="ct">All Shops (${shops.length})</div></div>
+    ${shops.map(s=>{const v=vans.find(x=>x.id==s.van_id),a=areas.find(x=>x.id==s.area_id);const cr=credits.find(c=>c.shop_id===s.id);const bal=cr?(+cr.balance||0):0;return`<div class="si-item"><div><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:var(--txs);margin-top:2px">${v?v.name:'—'}${a?' · '+a.name:''} · ${s.phone||'No phone'}${bal!==0?' · <b style="color:'+(bal>0?'var(--red)':'var(--grn)')+'">'+RsC(Math.abs(bal))+'</b>':''}</div></div><div class="si-btns"><button class="btn-ico" onclick="aEditShop(${s.id})">✏️</button><button class="btn-ico" onclick="aDelShop(${s.id})">🗑</button></div></div>`;}).join('')}
+  </div>`;
+};
+
+// ── MOBILE: OPERATIONS HUB ───────────────
+// ── MOBILE HOME: OPERATIONS ──────────────
+PG['o-home-ops']=()=>Promise.resolve(`
+  <div class="sec-lbl" style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:10px">🚐 Operations</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <button class="mc-btn" onclick="goTo('o-prod')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🏭</span>
+      <div style="text-align:left"><span class="mc-t">Production</span><span class="mc-s">Log today's factory output</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-load')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🚐</span>
+      <div style="text-align:left"><span class="mc-t">Van Loading</span><span class="mc-s">Load vans for tomorrow's delivery</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-stock')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">📦</span>
+      <div style="text-align:left"><span class="mc-t">Van Stock</span><span class="mc-s">Check live stock in each van</span></div>
+    </button>
+    <button class="mc-btn" onclick="goTo('o-carry')" style="display:flex;align-items:center;gap:14px;padding:16px">
+      <span style="font-size:28px">🔄</span>
+      <div style="text-align:left"><span class="mc-t">Carryover</span><span class="mc-s">Move leftover stock to next day</span></div>
+    </button>
+  </div>`);
+
+// ── MOBILE HOME: FINANCE ─────────────────
+PG['o-home-fin']=()=>Promise.resolve(`
+  <div class="sec-lbl" style="font-size:13px;font-weight:800;color:var(--teal);margin-bottom:10px">💰 Finance</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <button class="mc-btn" onclick="goTo('o-settle')" style="display:flex;align-items:c/* ALERTS */
 .al{padding:11px 14px;border-radius:13px;font-size:13px;font-weight:500;margin-bottom:12px;border-width:1px;border-style:solid;line-height:1.5}
 .al-s{background:var(--grn-l);color:var(--grn);border-color:var(--grn-b)}
 .al-e{background:var(--red-l);color:var(--red);border-color:var(--red-b)}
